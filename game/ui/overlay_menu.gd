@@ -5,6 +5,8 @@ extends CanvasLayer
 var _title: Label
 var _stats: Label
 var _buttons: VBoxContainer
+## Called when Esc is pressed while the overlay is open.
+var on_cancel: Callable
 
 
 func _init() -> void:
@@ -49,6 +51,13 @@ func open(title: String, color: Color, stats: String, buttons: Array) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if _buttons.get_child_count() > 0:
 		(_buttons.get_child(0) as Button).grab_focus.call_deferred()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if visible and on_cancel.is_valid() and event.is_action_pressed(&"pause"):
+		on_cancel.call()
+		if is_inside_tree():
+			get_viewport().set_input_as_handled()
 
 
 func close() -> void:

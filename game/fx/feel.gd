@@ -16,7 +16,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_last_usec = Time.get_ticks_usec()
 	var layer := CanvasLayer.new()
-	layer.layer = 50
+	layer.layer = 5  # below HUD (10) and menus (20)
 	add_child(layer)
 	var rect := ColorRect.new()
 	rect.set_anchors_preset(Control.PRESET_FULL_RECT)

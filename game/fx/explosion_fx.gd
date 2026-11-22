@@ -6,6 +6,8 @@ const SLOTS := 8
 const FIRE := Color("#ff8a3d")
 
 var pool := FxPool.new(SLOTS)
+var _spark_pool := FxPool.new(6)
+var _sparks: Array[GPUParticles3D] = []
 var _slots: Array[Dictionary] = []
 var _ocean: Ocean
 
@@ -15,6 +17,21 @@ func _ready() -> void:
 	_ocean = get_tree().get_first_node_in_group(&"ocean") as Ocean
 	for i in SLOTS:
 		_slots.append(_build_slot())
+	for i in 6:
+		var pm := _pm(Vector3.UP, 70.0, 4.0, 12.0, 14.0, 1.0)
+		pm.color_ramp = FxUtil.ramp([FIRE * 3.5, Color(1, 0.6, 0.2, 0.0)], PackedFloat32Array([0.0, 1.0]))
+		var p := FxUtil.burst(14, 0.45, pm, FxUtil.quad(0.25, true))
+		p.top_level = true
+		add_child(p)
+		_sparks.append(p)
+
+
+## Light hit feedback (flak, gunfire): a few sparks, outside the explosion pool, no screen shake.
+func hit_spark(at: Vector3) -> void:
+	var i := _spark_pool.acquire()
+	_sparks[i].global_position = at
+	FxUtil.fire(_sparks[i])
+	_spark_pool.release(i)
 
 
 func _pm(dir: Vector3, spread: float, vmin: float, vmax: float, grav: float, damping: float) -> ParticleProcessMaterial:

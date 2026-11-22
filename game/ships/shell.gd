@@ -25,6 +25,8 @@ func setup(p_from: Vector3, p_to: Vector3, p_flight: float, p_damage: float, p_t
 	flight_time = p_flight
 	damage = p_damage
 	target = p_target
+	if is_inside_tree() and has_node(^"/root/Sfx"):
+		Sfx.play(&"shell_whistle", to, -4.0)
 
 
 func _ready() -> void:
@@ -63,8 +65,6 @@ func _ready() -> void:
 	_trail.draw_pass_1 = FxUtil.quad(0.6, true)
 	_trail.visibility_aabb = AABB(Vector3(-100, -10, -100), Vector3(200, 60, 200))
 	_ball.add_child(_trail)
-	if has_node(^"/root/Sfx"):
-		Sfx.play(&"shell_whistle", to, -4.0)
 
 
 func _process(delta: float) -> void:

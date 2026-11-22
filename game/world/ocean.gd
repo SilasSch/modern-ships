@@ -5,6 +5,7 @@ extends MeshInstance3D
 const SIZE := 420.0
 const SUBDIV := 300
 const SHADER := preload("res://world/ocean.gdshader")
+const WAKE_SLOTS := 16
 
 @export var wave_amp: float = 1.55
 ## The surface re-centres under this node (snapped to the grid, so waves stay put in world space).
@@ -16,10 +17,14 @@ var time: float = 0.0
 var _beam_from := Vector2.ZERO
 var _beam_to := Vector2(0.01, 0.0)
 var _beam_glow: float = 0.0
-var _wakes := PackedVector4Array([Vector4(), Vector4(), Vector4(), Vector4(), Vector4(), Vector4(), Vector4(), Vector4()])
+var _wakes := PackedVector4Array()
+var _wake_used: Array[bool] = []
 
 
 func _init() -> void:
+	_wakes.resize(WAKE_SLOTS)
+	_wake_used.resize(WAKE_SLOTS)
+	_wake_used[0] = true  # player
 	add_to_group(&"ocean")
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(SIZE, SIZE)
@@ -66,7 +71,22 @@ func set_beam_glow(from: Vector3, to: Vector3, amount: float) -> void:
 	_beam_glow = amount
 
 
-## Kelvin wake behind a moving ship. slot 0..7; speed 0 disables.
+## Reserves a wake slot for an enemy (slot 0 is the player's). Returns -1 when all are taken.
+func acquire_wake() -> int:
+	for i in range(1, WAKE_SLOTS):
+		if not _wake_used[i]:
+			_wake_used[i] = true
+			return i
+	return -1
+
+
+func release_wake(slot: int) -> void:
+	if slot > 0 and slot < WAKE_SLOTS:
+		_wake_used[slot] = false
+		_wakes[slot] = Vector4()
+
+
+## Kelvin wake behind a moving ship. slot 0..WAKE_SLOTS-1; speed 0 disables.
 func set_wake(slot: int, pos: Vector3, heading: float, speed: float) -> void:
 	_wakes[slot] = Vector4(pos.x, pos.z, heading, speed)
 

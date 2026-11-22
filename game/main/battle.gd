@@ -47,7 +47,7 @@ func _ready() -> void:
 		node.position = Vector3(pos.x, -0.3, pos.y)
 		node.rotation.y = _rng.randf_range(0.0, TAU)
 		add_child(node)
-		blockers.append({"center": pos, "radius": float(isl[2]) * 0.85})
+		blockers.append({"center": pos, "radius": float(isl[2]) * 1.0})
 	player = (load("res://ships/player_ship.tscn") as PackedScene).instantiate()
 	player.blockers = blockers
 	add_child(player)
@@ -66,6 +66,7 @@ func _ready() -> void:
 	hud.battle = self
 	add_child(hud)
 	_pause_menu = OverlayMenu.new()
+	_pause_menu.on_cancel = func() -> void: set_paused(false)
 	add_child(_pause_menu)
 	_end_menu = OverlayMenu.new()
 	add_child(_end_menu)
@@ -85,6 +86,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func set_paused(paused: bool) -> void:
 	if paused:
 		player.railgun.cancel()
+		if has_node(^"/root/Sfx"):
+			Sfx.loop(&"overcharge_loop", false)
 		get_tree().paused = true
 		_pause_menu.open("PAUSE", UiTheme.TEXT, "", [
 			["Weiter", func() -> void: set_paused(false)],

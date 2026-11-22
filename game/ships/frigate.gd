@@ -13,6 +13,8 @@ var _glows: Array[OmniLight3D] = []
 func _init() -> void:
 	configure(MODEL, Tuning.FRIGATE_HP, Tuning.FRIGATE_SPEED, 2.0, 0.35, 5.0)
 	explosion_strength = 1.3
+	collision_radius = 1.7
+	half_length = 8.0
 
 
 func _ready() -> void:
@@ -37,10 +39,10 @@ func _ai(delta: float) -> void:
 	var tp := target_pos2()
 	var to := tp - motion.position
 	var dist := to.length()
-	if dist > 130.0:
+	if dist > Tuning.FRIGATE_STANDOFF_MAX:
 		throttle = 1.0
 		steer_to(tp)
-	elif dist < 80.0:
+	elif dist < Tuning.FRIGATE_STANDOFF_MIN:
 		throttle = 1.0
 		steer_to(motion.position - to)
 	else:

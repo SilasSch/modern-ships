@@ -46,21 +46,48 @@ func step(throttle: float, rudder: float, dt: float) -> void:
 	position += forward_of(heading) * speed * dt
 
 
-## Pushes the ship out of circular blockers and the map bounds, removing speed into the wall.
-func resolve_blockers(blockers: Array, ship_radius: float) -> void:
-	for b: Dictionary in blockers:
-		var center: Vector2 = b["center"]
-		var min_dist := float(b["radius"]) + ship_radius
-		var delta := position - center
-		var dist := delta.length()
-		if dist >= min_dist:
-			continue
-		var n := delta / dist if dist > 0.0001 else Vector2.UP
-		position = center + n * min_dist
-		var into := forward_of(heading).dot(n) * speed
-		if into < 0.0:
-			speed *= 1.0 - absf(forward_of(heading).dot(n))
-	var clamped := position.clamp(Vector2(-Tuning.MAP_HALF, -Tuning.MAP_HALF), Vector2(Tuning.MAP_HALF, Tuning.MAP_HALF))
-	if clamped != position:
-		position = clamped
-		speed *= 0.5
+## Pushes the hull (sampled along its length) out of circular blockers and the map bounds.
+## Glancing contact slides; near head-on contact (> ~37°) stops the ship.
+func resolve_blockers(blockers: Array, ship_radius: float, half_length: float = 0.0) -> void:
+	var f := forward_of(heading)
+	var reach := maxf(0.0, half_length - ship_radius)
+	var offsets: Array[float] = [0.0]
+	if reach > 0.0:
+		offsets = [-reach, -reach * 0.5, 0.0, reach * 0.5, reach]
+	for pass_i in 2:
+		for b: Dictionary in blockers:
+			var center: Vector2 = b["center"]
+			var min_dist := float(b["radius"]) + ship_radius
+			var push := Vector2.ZERO
+			for off: float in offsets:
+				var p := position + f * off
+				var delta := p - center
+				var dist := delta.length()
+				if dist < min_dist:
+					var n := delta / dist if dist > 0.0001 else -f
+					var need := n * (min_dist - dist)
+					if need.length() > push.length():
+						push = need
+			if push != Vector2.ZERO:
+				position += push
+				_hit_wall(push.normalized(), f)
+	var lim := Tuning.MAP_HALF
+	if position.x < -lim:
+		position.x = -lim
+		_hit_wall(Vector2(1, 0), f)
+	elif position.x > lim:
+		position.x = lim
+		_hit_wall(Vector2(-1, 0), f)
+	if position.y < -lim:
+		position.y = -lim
+		_hit_wall(Vector2(0, 1), f)
+	elif position.y > lim:
+		position.y = lim
+		_hit_wall(Vector2(0, -1), f)
+
+
+## n = wall normal pointing away from the wall.
+func _hit_wall(n: Vector2, f: Vector2) -> void:
+	var into := f.dot(n) * speed
+	if into < 0.0 and absf(f.dot(n)) > 0.8:
+		speed = 0.0

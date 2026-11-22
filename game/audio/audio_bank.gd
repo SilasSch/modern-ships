@@ -14,6 +14,8 @@ var _p2: Array[AudioStreamPlayer] = []
 var _i3: int = 0
 var _i2: int = 0
 var _loops: Dictionary = {}
+var last_sound: StringName
+var last_at: Vector3 = Vector3.INF
 
 
 func _ready() -> void:
@@ -39,6 +41,8 @@ func play(sound: StringName, at: Vector3 = Vector3.INF, volume_db: float = 0.0, 
 	var stream: AudioStream = _streams.get(sound)
 	if stream == null:
 		return
+	last_sound = sound
+	last_at = at
 	if at == Vector3.INF:
 		var p := _p2[_i2]
 		_i2 = (_i2 + 1) % POOL_2D
@@ -72,3 +76,8 @@ func loop(sound: StringName, on: bool, volume_db: float = 0.0) -> void:
 		p.play()
 	elif not on and p.playing:
 		p.stop()
+
+
+func is_looping(sound: StringName) -> bool:
+	var p: AudioStreamPlayer = _loops.get(sound)
+	return p != null and p.playing

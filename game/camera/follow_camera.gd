@@ -4,12 +4,12 @@ extends Camera3D
 ## Also projects the mouse onto the sea (y = 0) to set the ship's aim point.
 
 @export var target: PlayerShip
-@export var pitch_deg: float = 50.0
-@export var distance: float = 58.0
+@export var pitch_deg: float = 58.0
+@export var distance: float = 110.0
 @export var lead: float = 12.0
 @export var mouse_aim: bool = true
 
-var base_fov: float = 40.0
+var base_fov: float = 46.0
 var _focus: Vector3
 var _feel_offset := Vector3.ZERO
 var _kick: float = 0.0
@@ -48,7 +48,18 @@ func _process(delta: float) -> void:
 	var offset := Vector3(0.0, sin(pitch), cos(pitch)) * dist
 	global_position = _focus + offset + _feel_offset
 	look_at(_focus + _feel_offset * 0.35, Vector3.UP)
-	fov = base_fov + _fov_add
+	fov = _aspect_fov() + _fov_add
+
+
+## base_fov is the vertical FOV at 16:9. Narrower screens (16:10, 3:2, 4:3) keep the same
+## horizontal coverage instead of losing the sides; wider screens keep the vertical FOV.
+func _aspect_fov() -> float:
+	var vp := get_viewport().get_visible_rect().size
+	var aspect := vp.x / maxf(vp.y, 1.0)
+	if aspect >= 16.0 / 9.0:
+		return base_fov
+	var half_h := atan(tan(deg_to_rad(base_fov) * 0.5) * 16.0 / 9.0)
+	return rad_to_deg(2.0 * atan(tan(half_h) / aspect))
 
 
 ## Mouse ray hit on the plane y = 0, or null.

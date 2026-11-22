@@ -7,6 +7,7 @@ const LIFETIME := 9.0
 
 var dir := Vector3.FORWARD
 var target: Node3D
+var blockers: Array = []
 var _t: float = 0.0
 var _done: bool = false
 var _trail: GPUParticles3D
@@ -16,6 +17,8 @@ func setup(p_from: Vector3, p_dir: Vector3, p_target: Node3D) -> void:
 	global_position = Vector3(p_from.x, -0.3, p_from.z)
 	dir = Vector3(p_dir.x, 0, p_dir.z).normalized()
 	target = p_target
+	if is_inside_tree() and has_node(^"/root/Sfx"):
+		Sfx.play(&"torpedo", global_position, 0.0)
 
 
 func _ready() -> void:
@@ -48,8 +51,6 @@ func _ready() -> void:
 	_trail.visibility_aabb = AABB(Vector3(-100, -5, -100), Vector3(200, 20, 200))
 	_trail.position = Vector3(0, 0.5, 0)
 	add_child(_trail)
-	if has_node(^"/root/Sfx"):
-		Sfx.play(&"torpedo", global_position, 0.0)
 
 
 func _process(delta: float) -> void:
@@ -59,6 +60,11 @@ func _process(delta: float) -> void:
 	global_position += dir * Tuning.TORPEDO_SPEED * delta
 	if dir != Vector3.ZERO and is_inside_tree():
 		look_at(global_position + dir, Vector3.UP)
+	var p2 := Vector2(global_position.x, global_position.z)
+	for b: Dictionary in blockers:
+		if p2.distance_to(b["center"]) < float(b["radius"]):
+			_explode()
+			return
 	if target and is_instance_valid(target) and target.call(&"can_be_hit"):
 		var d := Vector2(target.global_position.x - global_position.x, target.global_position.z - global_position.z).length()
 		if d < HIT_DIST:

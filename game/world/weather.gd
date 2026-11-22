@@ -17,7 +17,7 @@ func _ready() -> void:
 	_rng.seed = 7
 	rain = GPUParticles3D.new()
 	rain.name = "Rain"
-	rain.amount = 7000
+	rain.amount = roundi(7000 * Settings.particle_scale())
 	rain.lifetime = 0.8
 	rain.preprocess = 0.8
 	rain.visibility_aabb = AABB(Vector3(-80, -45, -80), Vector3(160, 60, 160))

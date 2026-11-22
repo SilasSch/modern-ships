@@ -19,7 +19,7 @@ uniform vec2 trench_meta[2];    // age, width
 uniform vec3 charge = vec3(0.0); // x, z, amount
 uniform vec4 beam_glow_line = vec4(0.0, 0.0, 0.01, 0.0);
 uniform float beam_glow = 0.0;
-uniform vec4 wakes[8];           // x, z, heading, speed
+uniform vec4 wakes[16];           // x, z, heading, speed
 
 varying vec3 v_world;
 varying float v_foam;
@@ -67,7 +67,7 @@ float fx(vec2 p, out float foam) {
 		h += 0.9 * exp(-sq(di - ri) / 3.0) * e - 1.4 * exp(-di * di / 8.0) * e * exp(-r.z * 2.0);
 		foam += (exp(-sq(di - ri) / 3.0) + exp(-di * di / 14.0) * 1.4) * e;
 	}
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 16; i++) {
 		vec4 w = wakes[i];
 		if (abs(w.w) < 0.3) continue;
 		vec2 fwd = vec2(-sin(w.z), -cos(w.z));

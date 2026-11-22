@@ -15,6 +15,8 @@ var _tracer_t: float = 0.0
 func _init() -> void:
 	configure(MODEL, Tuning.SPEEDBOAT_HP, Tuning.SPEEDBOAT_SPEED, 9.0, 1.7, 2.4)
 	is_small = true
+	collision_radius = 1.0
+	half_length = 3.0
 	explosion_strength = 0.6
 
 
@@ -46,7 +48,7 @@ func _ai(delta: float) -> void:
 	if _tracer_t <= 0.0:
 		_tracer_mesh.clear_surfaces()
 	_gun_t -= delta
-	if _gun_t <= 0.0 and rel.length() < Tuning.SPEEDBOAT_RANGE:
+	if _gun_t <= 0.0 and rel.length() < Tuning.SPEEDBOAT_RANGE and not Blockers.segment_blocked(motion.position, tp, blockers):
 		_gun_t = Tuning.SPEEDBOAT_GUN_INTERVAL
 		_shoot()
 

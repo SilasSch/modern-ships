@@ -62,7 +62,7 @@ static func curve(points: Array[Vector2]) -> CurveTexture:
 
 static func burst(amount: int, lifetime: float, pm: ParticleProcessMaterial, mesh: Mesh) -> GPUParticles3D:
 	var p := GPUParticles3D.new()
-	p.amount = amount
+	p.amount = maxi(1, roundi(amount * Settings.particle_scale()))
 	p.lifetime = lifetime
 	p.one_shot = true
 	p.explosiveness = 1.0

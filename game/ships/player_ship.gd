@@ -10,6 +10,8 @@ signal charge_started()
 
 const MODEL := preload("res://assets/models/destroyer.glb")
 const HIT_RADIUS := 4.0
+const HULL_RADIUS := 2.4
+const HALF_LENGTH := 12.0
 
 var motion := ShipMotion.new(Tuning.MAX_SPEED, Tuning.MAX_REVERSE, Tuning.ACCEL, Tuning.TURN_RATE)
 var turret := TurretAim.new()
@@ -53,10 +55,10 @@ func _ready() -> void:
 	model.get_node("FlakPivot/FlakGun").reparent(flak, false)
 	var deck_light := OmniLight3D.new()
 	deck_light.light_color = Color("#bfe9ff")
-	deck_light.light_energy = 0.9
-	deck_light.omni_range = 20.0
+	deck_light.light_energy = 1.6
+	deck_light.omni_range = 28.0
 	deck_light.light_volumetric_fog_energy = 0.0
-	deck_light.position = Vector3(0, 9, 0)
+	deck_light.position = Vector3(0, 12, 0)
 	add_child(deck_light)
 	fx = RailgunFx.new()
 	fx.name = "RailgunFx"
@@ -96,6 +98,18 @@ func _handle_fire_input(pressed: bool) -> void:
 	fired.emit(shot, origin, Vector3(f.x, 0.0, f.y))
 
 
+## Keeps the gun in sync with the held button: a press held through cooldown starts charging,
+## and a lost release event (focus change, overlay) still ends the charge.
+func _poll_fire() -> void:
+	if not use_device_input or not input_enabled or health.is_dead():
+		return
+	var held := Input.is_action_pressed(&"fire")
+	if held and railgun.state == RailgunState.State.READY:
+		_handle_fire_input(true)
+	elif not held and railgun.state == RailgunState.State.CHARGING:
+		_handle_fire_input(false)
+
+
 func _process(delta: float) -> void:
 	if use_device_input:
 		var active := input_enabled and not health.is_dead()
@@ -105,13 +119,15 @@ func _process(delta: float) -> void:
 		throttle_input = 0.0
 		rudder_input = 0.0
 	motion.step(throttle_input, rudder_input, delta)
-	motion.resolve_blockers(blockers, HIT_RADIUS)
-	var to_aim := Vector2(aim_point.x, aim_point.z) - motion.position
-	if to_aim.length() > 1.0 and not health.is_dead():
+	motion.resolve_blockers(blockers, HULL_RADIUS, HALF_LENGTH)
+	var piv := turret_pivot.global_position
+	var to_aim := Vector2(aim_point.x - piv.x, aim_point.z - piv.z)
+	if to_aim.length() > 3.0 and not health.is_dead():
 		turret.step(ShipMotion.yaw_of(to_aim), motion.heading, delta)
 	if railgun.tick(delta):
 		apply_damage(Tuning.MISFIRE_SELF_DAMAGE)
 		misfired.emit()
+	_poll_fire()
 	recoil *= exp(-3.2 * delta)
 	if health.is_dead():
 		_sink = minf(_sink + delta * 0.7, 9.0)

@@ -10,6 +10,7 @@ var _wave_label: Label
 var _warn: Label
 var _hint: Label
 var _cursor: CursorRing
+var _edge_warn: Label
 var _hint_t: float = 9.0
 var _t: float = 0.0
 
@@ -59,8 +60,25 @@ func _ready() -> void:
 	_hint.size = Vector2(1600, 30)
 	root.add_child(_hint)
 
+	_edge_warn = UiTheme.label("KARTENRAND – WENDEN", 30, UiTheme.AMBER, UiTheme.display_bold)
+	_edge_warn.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_edge_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_edge_warn.position = Vector2(-400, 70)
+	_edge_warn.size = Vector2(800, 40)
+	_edge_warn.visible = false
+	root.add_child(_edge_warn)
+
+	var markers := EdgeMarkers.new()
+	markers.battle = battle
+	root.add_child(markers)
+
 	_cursor = CursorRing.new()
 	root.add_child(_cursor)
+
+
+## Clamps a screen point into the rect inset by margin (off-screen marker placement).
+static func edge_point(p: Vector2, size: Vector2, margin: float) -> Vector2:
+	return Vector2(clampf(p.x, margin, size.x - margin), clampf(p.y, margin, size.y - margin))
 
 
 func _process(delta: float) -> void:
@@ -84,5 +102,7 @@ func _process(delta: float) -> void:
 	else:
 		_wave_label.text = "WELLE %d / %d  ·  %d %s" % [d.current_wave, d.total_waves(), d.alive, "FEIND" if d.alive == 1 else "FEINDE"]
 	_warn.visible = p.railgun.state == RailgunState.State.LOCKED and fmod(_t, 0.5) < 0.32
+	var edge := Tuning.MAP_HALF - maxf(absf(p.motion.position.x), absf(p.motion.position.y))
+	_edge_warn.visible = edge < 25.0 and fmod(_t, 0.8) < 0.55
 	_hint_t -= delta
 	_hint.modulate.a = clampf(_hint_t, 0.0, 1.0)

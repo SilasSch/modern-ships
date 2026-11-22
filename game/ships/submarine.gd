@@ -17,6 +17,8 @@ var _fired: bool = false
 func _init() -> void:
 	configure(MODEL, Tuning.SUB_HP, Tuning.SUB_SPEED, 2.5, 0.5, 3.0)
 	explosion_strength = 1.0
+	collision_radius = 1.0
+	half_length = 7.0
 
 
 func _ready() -> void:
@@ -57,7 +59,7 @@ func _ai(delta: float) -> void:
 				var tp := target_pos2()
 				var rel := motion.position - tp
 				var ang := atan2(rel.y, rel.x) + 0.6
-				steer_to(tp + Vector2(cos(ang), sin(ang)) * 70.0)
+				steer_to(tp + Vector2(cos(ang), sin(ang)) * Tuning.SUB_ATTACK_DIST)
 			if _state_t >= Tuning.SUB_SUBMERGED_TIME:
 				set_state(SubState.SURFACING)
 		SubState.SURFACING:
@@ -86,5 +88,6 @@ func _launch() -> void:
 	if to.length() > Tuning.SUB_RANGE:
 		return
 	var t := Torpedo.new()
+	t.blockers = blockers
 	get_parent().add_child(t)
 	t.setup(from, to, target)

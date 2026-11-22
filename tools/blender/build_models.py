@@ -30,7 +30,7 @@ MATERIALS = {
     "NavGreen": ("#083008", "#2aff6a", 6.0, 0.3, 0.0),
     "EnemyAccent": ("#3a0c0c", "#ff3b3b", 5.0, 0.3, 0.0),
     "Energy": ("#0a2a30", "#4de8ff", 1.0, 0.2, 0.0),
-    "PlayerAccent": ("#0a2a30", "#4de8ff", 3.0, 0.3, 0.0),
+    "PlayerAccent": ("#0a2a30", "#4de8ff", 7.0, 0.3, 0.0),
     "EnemyHull": ("#2e333a", None, 0.0, 0.65, 0.25),
     "EnemyDeck": ("#16191d", None, 0.0, 0.85, 0.1),
     "Rock": ("#2a2f36", None, 0.0, 0.95, 0.0),

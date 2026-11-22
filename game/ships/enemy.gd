@@ -6,14 +6,14 @@ signal died(enemy: Enemy)
 
 const FIRE := Color("#ff8a3d")
 
-static var _next_wake: int = 0
-
 var health: Health
 var motion: ShipMotion
 var target: Node3D
 var blockers: Array = []
 var is_small: bool = false
 var hit_radius: float = 3.0
+var collision_radius: float = 1.5
+var half_length: float = 4.0
 var explosion_strength: float = 1.0
 var model: Node3D
 var bow: Node3D
@@ -23,7 +23,7 @@ var throttle: float = 0.0
 var rudder: float = 0.0
 var dying: bool = false
 var _die_t: float = 0.0
-var _wake_slot: int = 1
+var _wake_slot: int = -1
 var _ocean: Ocean
 var _burn: Array[GPUParticles3D] = []
 var _rng := RandomNumberGenerator.new()
@@ -44,9 +44,9 @@ func configure(model_scene: PackedScene, hp: float, max_speed: float, accel: flo
 func _ready() -> void:
 	add_to_group(&"enemies")
 	_rng.seed = get_instance_id()
-	_wake_slot = 1 + (_next_wake % 7)
-	_next_wake += 1
 	_ocean = get_tree().get_first_node_in_group(&"ocean") as Ocean
+	if _ocean:
+		_wake_slot = _ocean.acquire_wake()
 	motion.position = Vector2(global_position.x, global_position.z)
 	motion.heading = rotation.y
 
@@ -70,7 +70,10 @@ func apply_damage(amount: float, _from_dir: Vector3) -> void:
 	if killed:
 		_die()
 	elif _explosions():
-		_explosions().play(global_position + Vector3(0, 1.0, 0), 0.35)
+		if amount >= 25.0:
+			_explosions().play(global_position + Vector3(0, 1.0, 0), 0.35)
+		else:
+			_explosions().hit_spark(global_position + Vector3(0, 1.2, 0))
 
 
 func get_hit_center() -> Vector2:
@@ -97,8 +100,7 @@ func _sfx(sound: StringName, volume_db: float = 0.0) -> void:
 func _die() -> void:
 	dying = true
 	_die_t = 0.0
-	if _ocean:
-		_ocean.set_wake(_wake_slot, global_position, 0.0, 0.0)
+	_release_wake()
 	if _explosions():
 		_explosions().play(global_position + Vector3(0, 1.0, 0), explosion_strength)
 	_sfx(&"explosion", 2.0)
@@ -142,6 +144,17 @@ func _make_burn() -> GPUParticles3D:
 	return p
 
 
+func _release_wake() -> void:
+	if _ocean and _wake_slot > 0:
+		_ocean.set_wake(_wake_slot, global_position, 0.0, 0.0)
+		_ocean.release_wake(_wake_slot)
+	_wake_slot = -1
+
+
+func _exit_tree() -> void:
+	_release_wake()
+
+
 ## Override: set throttle / rudder and fire weapons.
 func _ai(_delta: float) -> void:
 	pass
@@ -153,9 +166,9 @@ func _process(delta: float) -> void:
 		return
 	_ai(delta)
 	motion.step(throttle, rudder, delta)
-	motion.resolve_blockers(blockers, hit_radius)
+	motion.resolve_blockers(blockers, collision_radius, half_length)
 	_apply_transform()
-	if _ocean:
+	if _ocean and _wake_slot > 0:
 		_ocean.set_wake(_wake_slot, global_position, motion.heading, motion.speed)
 
 

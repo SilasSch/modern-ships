@@ -49,7 +49,9 @@ const FRIGATE_SPEED: float = 7.0
 const FRIGATE_SALVO: int = 3
 const FRIGATE_SHELL_DMG: float = 20.0
 const FRIGATE_SALVO_INTERVAL: float = 5.0
-const FRIGATE_RANGE: float = 140.0
+const FRIGATE_RANGE: float = 110.0
+const FRIGATE_STANDOFF_MIN: float = 50.0
+const FRIGATE_STANDOFF_MAX: float = 85.0
 const SHELL_FLIGHT_TIME: float = 1.8
 const SUB_HP: float = 90.0
 const SUB_SPEED: float = 9.0
@@ -57,7 +59,8 @@ const SUB_SUBMERGED_TIME: float = 7.0
 const SUB_SURFACED_TIME: float = 5.0
 const TORPEDO_DMG: float = 45.0
 const TORPEDO_SPEED: float = 18.0
-const SUB_RANGE: float = 120.0
+const SUB_RANGE: float = 90.0
+const SUB_ATTACK_DIST: float = 55.0
 
 # --- Flow ---
 const WAVE_DELAY: float = 3.0

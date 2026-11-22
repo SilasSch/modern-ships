@@ -107,7 +107,7 @@ func _setup_charge() -> void:
 	pm.scale_max = 1.2
 	pm.color = BEAM_COLOR * 3.0
 	_suction = GPUParticles3D.new()
-	_suction.amount = 160
+	_suction.amount = roundi(160 * Settings.particle_scale())
 	_suction.lifetime = 0.38
 	_suction.local_coords = true
 	_suction.emitting = false

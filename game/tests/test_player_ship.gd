@@ -49,6 +49,7 @@ func test_fire_emits_signal_with_muzzle_origin() -> void:
 
 
 func test_misfire_damages_self() -> void:
+	ship.use_device_input = false
 	watch_signals(ship)
 	ship.railgun.heat = 0.99
 	ship._handle_fire_input(true)
