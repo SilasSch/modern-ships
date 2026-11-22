@@ -7,6 +7,8 @@ const SUBDIV := 300
 const SHADER := preload("res://world/ocean.gdshader")
 
 @export var wave_amp: float = 1.55
+## The surface re-centres under this node (snapped to the grid, so waves stay put in world space).
+@export var follow: Node3D
 
 var effects := OceanEffects.new()
 var time: float = 0.0
@@ -71,6 +73,9 @@ func set_wake(slot: int, pos: Vector3, heading: float, speed: float) -> void:
 
 func _process(delta: float) -> void:
 	time += delta
+	if follow and is_instance_valid(follow):
+		var step := SIZE / SUBDIV
+		global_position = Vector3(snappedf(follow.global_position.x, step), 0.0, snappedf(follow.global_position.z, step))
 	effects.tick(delta)
 	var mat := material_override as ShaderMaterial
 	mat.set_shader_parameter("u_time", time)

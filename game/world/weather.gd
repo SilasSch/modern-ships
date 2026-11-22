@@ -49,7 +49,10 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if follow:
-		rain.global_position = Vector3(follow.global_position.x, 30.0, follow.global_position.z - 30.0)
+		var fwd := -follow.global_transform.basis.z
+		fwd.y = 0.0
+		fwd = fwd.normalized() * 45.0 if fwd.length() > 0.01 else Vector3(0, 0, -30)
+		rain.global_position = Vector3(follow.global_position.x + fwd.x, 30.0, follow.global_position.z + fwd.z)
 	_next_bolt -= delta
 	if _next_bolt <= 0.0:
 		_next_bolt = _rng.randf_range(5.0, 11.0)

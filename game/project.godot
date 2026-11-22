@@ -8,12 +8,14 @@ config/description="2.5D-Seegefecht mit Railgun"
 config/version="0.1.0"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/project_settings_override="user://settings_override.cfg"
+run/main_scene="res://ui/title.tscn"
 
 [autoload]
 
 Capture="*res://debug/capture.gd"
 Feel="*res://fx/feel.gd"
 Sfx="*res://audio/audio_bank.gd"
+Flow="*res://main/game_flow.gd"
 
 [debug]
 

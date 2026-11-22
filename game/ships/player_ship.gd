@@ -22,6 +22,7 @@ var throttle_input: float = 0.0
 var rudder_input: float = 0.0
 var blockers: Array = []
 var recoil: float = 0.0
+var _sink: float = 0.0
 
 var model: Node3D
 var turret_pivot: Node3D
@@ -112,6 +113,8 @@ func _process(delta: float) -> void:
 		apply_damage(Tuning.MISFIRE_SELF_DAMAGE)
 		misfired.emit()
 	recoil *= exp(-3.2 * delta)
+	if health.is_dead():
+		_sink = minf(_sink + delta * 0.7, 9.0)
 	_apply_transform()
 	if _ocean:
 		_ocean.set_wake(0, global_position, motion.heading, motion.speed)
@@ -129,8 +132,8 @@ func _apply_transform() -> void:
 	var h_stern := Ocean.wave_height(x - f.x * 9.0, z - f.y * 9.0, t, amp)
 	var h_port := Ocean.wave_height(x + side.x * 2.5, z + side.y * 2.5, t, amp)
 	var h_star := Ocean.wave_height(x - side.x * 2.5, z - side.y * 2.5, t, amp)
-	position = Vector3(x, (h_bow + h_stern + h_port + h_star) * 0.25 * 0.6, z)
-	rotation = Vector3(atan2(h_bow - h_stern, 18.0) * 0.6 + recoil * 0.035, motion.heading, atan2(h_port - h_star, 5.0) * -0.5)
+	position = Vector3(x, (h_bow + h_stern + h_port + h_star) * 0.25 * 0.6 - _sink, z)
+	rotation = Vector3(atan2(h_bow - h_stern, 18.0) * 0.6 + recoil * 0.035 + _sink * 0.05, motion.heading, atan2(h_port - h_star, 5.0) * -0.5 + _sink * 0.04)
 	turret_pivot.rotation.y = turret.angle
 	railgun_mesh.position = _railgun_rest + Vector3(0, 0, recoil * 0.9)
 
