@@ -14,9 +14,11 @@ var time: float = 0.0
 var _beam_from := Vector2.ZERO
 var _beam_to := Vector2(0.01, 0.0)
 var _beam_glow: float = 0.0
+var _wakes := PackedVector4Array([Vector4(), Vector4(), Vector4(), Vector4(), Vector4(), Vector4(), Vector4(), Vector4()])
 
 
 func _init() -> void:
+	add_to_group(&"ocean")
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(SIZE, SIZE)
 	plane.subdivide_width = SUBDIV
@@ -62,6 +64,11 @@ func set_beam_glow(from: Vector3, to: Vector3, amount: float) -> void:
 	_beam_glow = amount
 
 
+## Kelvin wake behind a moving ship. slot 0..7; speed 0 disables.
+func set_wake(slot: int, pos: Vector3, heading: float, speed: float) -> void:
+	_wakes[slot] = Vector4(pos.x, pos.z, heading, speed)
+
+
 func _process(delta: float) -> void:
 	time += delta
 	effects.tick(delta)
@@ -74,3 +81,4 @@ func _process(delta: float) -> void:
 	mat.set_shader_parameter("charge", Vector3(effects.charge_pos.x, effects.charge_pos.y, effects.charge_amount))
 	mat.set_shader_parameter("beam_glow_line", Vector4(_beam_from.x, _beam_from.y, _beam_to.x, _beam_to.y))
 	mat.set_shader_parameter("beam_glow", _beam_glow)
+	mat.set_shader_parameter("wakes", _wakes)

@@ -19,6 +19,7 @@ uniform vec2 trench_meta[2];    // age, width
 uniform vec3 charge = vec3(0.0); // x, z, amount
 uniform vec4 beam_glow_line = vec4(0.0, 0.0, 0.01, 0.0);
 uniform float beam_glow = 0.0;
+uniform vec4 wakes[8];           // x, z, heading, speed
 
 varying vec3 v_world;
 varying float v_foam;
@@ -65,6 +66,22 @@ float fx(vec2 p, out float foam) {
 		float e = exp(-r.z * 1.3) * r.w;
 		h += 0.9 * exp(-sq(di - ri) / 3.0) * e - 1.4 * exp(-di * di / 8.0) * e * exp(-r.z * 2.0);
 		foam += (exp(-sq(di - ri) / 3.0) + exp(-di * di / 14.0) * 1.4) * e;
+	}
+	for (int i = 0; i < 8; i++) {
+		vec4 w = wakes[i];
+		if (abs(w.w) < 0.3) continue;
+		vec2 fwd = vec2(-sin(w.z), -cos(w.z));
+		vec2 rel = p - w.xy;
+		float behind = -dot(rel, fwd);
+		if (behind < -6.0) continue;
+		float lat = abs(rel.x * fwd.y - rel.y * fwd.x);
+		float spd = clamp(abs(w.w) / 14.0, 0.0, 1.0);
+		float len = 20.0 + 70.0 * spd;
+		float fade = (1.0 - smoothstep(0.0, len, behind)) * spd;
+		float arm = 1.6 + max(behind, 0.0) * 0.36;
+		foam += exp(-sq(lat - arm) / (0.35 + behind * 0.03)) * fade * step(0.0, behind) * 0.55;
+		foam += exp(-sq(lat) / (1.2 + behind * 0.08)) * fade * smoothstep(-6.0, 4.0, behind) * 0.65;
+		h -= exp(-sq(lat) / 3.0) * fade * 0.25 * step(0.0, behind);
 	}
 	float c2 = charge.z * charge.z;
 	if (c2 > 0.0) {

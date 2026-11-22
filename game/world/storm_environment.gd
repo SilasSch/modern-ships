@@ -41,6 +41,7 @@ func _ready() -> void:
 	moon.light_color = Color("#9fb8ff")
 	moon.light_energy = 0.65
 	moon.light_volumetric_fog_energy = 0.3
+	moon.light_specular = 0.3
 	moon.rotation_degrees = Vector3(-50.0, 155.0, 0.0)
 	moon.shadow_enabled = true
 	add_child(moon)
