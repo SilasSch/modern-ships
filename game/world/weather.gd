@@ -43,6 +43,8 @@ func _ready() -> void:
 	rain.draw_pass_1 = quad
 	rain.position = Vector3(0, 30, -30)
 	add_child(rain)
+	if has_node(^"/root/Sfx"):
+		Sfx.loop(&"rain_loop", true, -8.0)
 
 
 func _process(delta: float) -> void:
@@ -52,11 +54,21 @@ func _process(delta: float) -> void:
 	if _next_bolt <= 0.0:
 		_next_bolt = _rng.randf_range(5.0, 11.0)
 		_flash = 1.0
-		lightning.emit(_rng.randf_range(0.6, 1.0))
+		var strength := _rng.randf_range(0.6, 1.0)
+		lightning.emit(strength)
+		_thunder(strength)
 	_flash *= exp(-7.0 * delta)
 	var flick := (0.6 + _rng.randf() * 0.4) if _flash > 0.05 else 1.0
 	if storm:
 		storm.set_flash(_flash * flick)
+
+
+func _thunder(strength: float) -> void:
+	if not has_node(^"/root/Sfx"):
+		return
+	var which := StringName("thunder_%d" % _rng.randi_range(0, 2))
+	await get_tree().create_timer(_rng.randf_range(0.4, 1.0)).timeout
+	Sfx.play(which, Vector3.INF, linear_to_db(strength) - 2.0)
 
 
 ## Forces a lightning strike now (used by capture scenarios).

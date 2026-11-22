@@ -13,6 +13,7 @@ config/project_settings_override="user://settings_override.cfg"
 
 Capture="*res://debug/capture.gd"
 Feel="*res://fx/feel.gd"
+Sfx="*res://audio/audio_bank.gd"
 
 [debug]
 

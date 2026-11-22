@@ -55,6 +55,15 @@ func _ready() -> void:
 	_setup_materials()
 	_setup_charge()
 	_setup_shot()
+	ship.charge_started.connect(func() -> void: _sfx(&"charge", ship.muzzle.global_position, 0.0))
+	ship.fired.connect(func(shot: RailgunShot, origin: Vector3, _dir: Vector3) -> void:
+		_sfx(&"fire", origin, 2.0, 1.0 - 0.12 * shot.overcharge))
+	ship.misfired.connect(func() -> void: _sfx(&"misfire", ship.global_position, 0.0))
+
+
+func _sfx(sound: StringName, at: Vector3, db: float, pitch: float = 1.0) -> void:
+	if has_node(^"/root/Sfx"):
+		Sfx.play(sound, at, db, pitch)
 
 
 # ------------------------------------------------------------------ setup
@@ -251,7 +260,11 @@ func _process(delta: float) -> void:
 	var o := gun.overcharge
 	var c2 := c * c
 	var charging := gun.state == RailgunState.State.CHARGING
+	if gun.state == RailgunState.State.READY and _prev_state == RailgunState.State.COOLDOWN:
+		_sfx(&"recharge", ship.global_position, -8.0)
 	_prev_state = gun.state
+	if has_node(^"/root/Sfx"):
+		Sfx.loop(&"overcharge_loop", charging and o > 0.0, linear_to_db(clampf(0.3 + o, 0.0, 1.0)) - 4.0)
 
 	var pulse := 0.75 + 0.25 * sin(Time.get_ticks_msec() * 0.03)
 	_afterglow = maxf(0.0, _afterglow - delta)
