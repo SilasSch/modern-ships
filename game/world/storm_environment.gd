@@ -10,6 +10,7 @@ var base_ambient: float = 0.7
 
 
 func _ready() -> void:
+	add_to_group(&"storm")
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = FOG_COLOR

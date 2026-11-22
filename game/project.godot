@@ -12,6 +12,7 @@ config/project_settings_override="user://settings_override.cfg"
 [autoload]
 
 Capture="*res://debug/capture.gd"
+Feel="*res://fx/feel.gd"
 
 [debug]
 

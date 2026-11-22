@@ -27,6 +27,7 @@ var model: Node3D
 var turret_pivot: Node3D
 var railgun_mesh: Node3D
 var muzzle: Node3D
+var fx: RailgunFx
 var _ocean: Ocean
 var _railgun_rest: Vector3
 
@@ -43,6 +44,9 @@ func _ready() -> void:
 	motion.position = Vector2(position.x, position.z)
 	motion.heading = rotation.y
 	_ocean = get_tree().get_first_node_in_group(&"ocean") as Ocean
+	fx = RailgunFx.new()
+	fx.name = "RailgunFx"
+	add_child(fx)
 
 
 func _notification(what: int) -> void:
