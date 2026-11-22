@@ -118,7 +118,7 @@ void fragment() {
 	float foam = clamp(v_foam * foam_amount, 0.0, 1.6) + smoothstep(0.78, 1.0, hn) * 0.35;
 	foam = smoothstep(0.35, 0.75, foam * (0.55 + 0.8 * nz));
 	ALBEDO = mix(col, foam_color, foam * 0.9);
-	ROUGHNESS = mix(0.2, 0.85, foam);
+	ROUGHNESS = mix(0.26, 0.85, foam);
 	SPECULAR = 0.6;
 	METALLIC = 0.0;
 	float bd = v_beam_d;

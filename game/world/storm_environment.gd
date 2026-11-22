@@ -5,6 +5,7 @@ extends WorldEnvironment
 const FOG_COLOR := Color("#0b1220")
 
 var moon: DirectionalLight3D
+var fill: DirectionalLight3D
 var base_ambient: float = 0.7
 
 
@@ -38,11 +39,21 @@ func _ready() -> void:
 	moon = DirectionalLight3D.new()
 	moon.name = "Moon"
 	moon.light_color = Color("#9fb8ff")
-	moon.light_energy = 0.9
+	moon.light_energy = 0.65
 	moon.light_volumetric_fog_energy = 0.3
 	moon.rotation_degrees = Vector3(-50.0, 155.0, 0.0)
 	moon.shadow_enabled = true
 	add_child(moon)
+
+	# Cool key/fill from the camera side so hull facets read against the dark sea.
+	fill = DirectionalLight3D.new()
+	fill.name = "Fill"
+	fill.light_color = Color("#8fa6d8")
+	fill.light_energy = 0.8
+	fill.light_specular = 0.25
+	fill.light_volumetric_fog_energy = 0.0
+	fill.rotation_degrees = Vector3(-38.0, -35.0, 0.0)
+	add_child(fill)
 
 
 ## Lightning flash: 0..1, called every frame by Weather.
