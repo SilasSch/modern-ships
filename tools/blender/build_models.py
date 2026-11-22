@@ -30,6 +30,7 @@ MATERIALS = {
     "NavGreen": ("#083008", "#2aff6a", 6.0, 0.3, 0.0),
     "EnemyAccent": ("#3a0c0c", "#ff3b3b", 5.0, 0.3, 0.0),
     "Energy": ("#0a2a30", "#4de8ff", 1.0, 0.2, 0.0),
+    "PlayerAccent": ("#0a2a30", "#4de8ff", 3.0, 0.3, 0.0),
     "EnemyHull": ("#2e333a", None, 0.0, 0.65, 0.25),
     "EnemyDeck": ("#16191d", None, 0.0, 0.85, 0.1),
     "Rock": ("#2a2f36", None, 0.0, 0.95, 0.0),
@@ -239,6 +240,10 @@ def build_destroyer():
     # vertical launch cells
     vls_grid(s, 2.5, 4, 2, D)
     vls_grid(s, 8.2, 3, 2, D)
+    # cyan identity stripes (player = cyan) along the deckhouse and hangar
+    for x in (-1.0, 1.0):
+        s.box((x * 1.66, -2.4, D + 0.55), (0.02, 3.3, 0.045), "PlayerAccent")
+        s.box((x * 1.62, -7.6, D + 0.55), (0.02, 1.8, 0.045), "PlayerAccent")
     # navigation lights
     s.box((-1.58, -1.2, D + 1.55), (0.06, 0.12, 0.06), "NavRed")
     s.box((1.58, -1.2, D + 1.55), (0.06, 0.12, 0.06), "NavGreen")

@@ -28,6 +28,7 @@ var turret_pivot: Node3D
 var railgun_mesh: Node3D
 var muzzle: Node3D
 var fx: RailgunFx
+var flak: FlakTurret
 var _ocean: Ocean
 var _railgun_rest: Vector3
 
@@ -44,6 +45,18 @@ func _ready() -> void:
 	motion.position = Vector2(position.x, position.z)
 	motion.heading = rotation.y
 	_ocean = get_tree().get_first_node_in_group(&"ocean") as Ocean
+	flak = FlakTurret.new()
+	flak.name = "Flak"
+	flak.ship = self
+	model.get_node("FlakPivot").add_child(flak)
+	model.get_node("FlakPivot/FlakGun").reparent(flak, false)
+	var deck_light := OmniLight3D.new()
+	deck_light.light_color = Color("#bfe9ff")
+	deck_light.light_energy = 0.9
+	deck_light.omni_range = 20.0
+	deck_light.light_volumetric_fog_energy = 0.0
+	deck_light.position = Vector3(0, 9, 0)
+	add_child(deck_light)
 	fx = RailgunFx.new()
 	fx.name = "RailgunFx"
 	add_child(fx)

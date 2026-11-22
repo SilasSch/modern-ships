@@ -36,10 +36,10 @@ const TURRET_ARC: float = deg_to_rad(150.0)
 # --- Flak ---
 const FLAK_RANGE: float = 60.0
 const FLAK_RATE: float = 8.0
-const FLAK_DAMAGE: float = 6.0
+const FLAK_DAMAGE: float = 3.0
 
 # --- Enemies ---
-const SPEEDBOAT_HP: float = 40.0
+const SPEEDBOAT_HP: float = 60.0
 const SPEEDBOAT_SPEED: float = 22.0
 const SPEEDBOAT_GUN_DMG: float = 4.0
 const SPEEDBOAT_GUN_INTERVAL: float = 0.5

@@ -60,8 +60,13 @@ func _build_slot() -> Dictionary:
 	column.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
 	column.emission_sphere_radius = 2.0
 	column.scale_curve = FxUtil.curve([Vector2(0, 0.5), Vector2(1, 1.6)])
-	column.color_ramp = FxUtil.ramp([Color(0.75, 0.85, 0.92, 0.9), Color(0.6, 0.7, 0.8, 0.0)], PackedFloat32Array([0.4, 1.0]))
-	parts.append(FxUtil.burst(160, 1.8, column, FxUtil.quad(1.6, false)))
+	column.color_ramp = FxUtil.ramp([Color(0.7, 0.8, 0.88, 0.75), Color(0.6, 0.7, 0.8, 0.0)], PackedFloat32Array([0.35, 1.0]))
+	var streak := QuadMesh.new()
+	streak.size = Vector2(0.45, 1.8)
+	streak.material = FxUtil.billboard_material(false)
+	var col_p := FxUtil.burst(140, 1.8, column, streak)
+	col_p.transform_align = GPUParticles3D.TRANSFORM_ALIGN_Z_BILLBOARD_Y_TO_VELOCITY
+	parts.append(col_p)
 
 	var debris := _pm(Vector3.UP, 70.0, 6.0, 18.0, 22.0, 0.2)
 	debris.angle_min = 0.0
@@ -89,7 +94,8 @@ func _build_slot() -> Dictionary:
 	return {"root": root, "parts": parts, "light": light, "t": 99.0, "k": 1.0}
 
 
-func play(at: Vector3, strength: float) -> void:
+## water_only: just a water column + ring (shell splashes), no fire.
+func play(at: Vector3, strength: float, water_only: bool = false) -> void:
 	var i := pool.acquire()
 	var s: Dictionary = _slots[i]
 	s["t"] = 0.0
@@ -97,11 +103,15 @@ func play(at: Vector3, strength: float) -> void:
 	var root: Node3D = s["root"]
 	root.global_position = Vector3(at.x, maxf(at.y, 0.5), at.z)
 	root.scale = Vector3.ONE * clampf(0.7 + strength * 0.5, 0.6, 1.8)
-	for p: GPUParticles3D in s["parts"]:
-		FxUtil.fire(p)
+	s["k"] = 0.0 if water_only else strength
+	var parts: Array = s["parts"]
+	for idx in parts.size():
+		if water_only and idx != 4:
+			continue
+		FxUtil.fire(parts[idx])
 	if _ocean:
 		_ocean.add_ring(at, clampf(strength, 0.3, 1.5))
-	if has_node(^"/root/Feel"):
+	if has_node(^"/root/Feel") and not water_only:
 		Feel.impact(clampf(strength * 0.6, 0.2, 1.0), at)
 
 
