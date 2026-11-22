@@ -9,6 +9,10 @@ config/version="0.1.0"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/project_settings_override="user://settings_override.cfg"
 
+[autoload]
+
+Capture="*res://debug/capture.gd"
+
 [debug]
 
 gdscript/warnings/untyped_declaration=2
