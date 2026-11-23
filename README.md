@@ -4,7 +4,9 @@
 
 ![Railgun-Schuss](docs/reference/etappe1-railgun-shot.png)
 
-**Stand: Etappe 1 – ein Gefecht.** Drei Wellen aus Schnellbooten, Stealth-Fregatten und Jagd-U-Booten.
+**Stand: Etappe 1b – „schwer & mächtig“.** Ein Gefecht über drei Wellen auf einer 1,2-km-Karte: Fregatten, Zerstörer, ein Kreuzer, U-Boote und vereinzelt Schnellboote. Gesteuert wird wie in World of Warships mit Telegraf- und Ruderstufen, die Railgun verschießt ein Projektil mit Flugzeit.
+
+![Railgun-Geschoss](docs/reference/etappe1b-railgun-round.png)
 
 ## Spielen
 
@@ -19,14 +21,15 @@ Fertige Builds hängt jeder CI-Lauf als Artefakte an (Actions → letzter Lauf �
 
 | Eingabe | Wirkung |
 |---|---|
-| W / S | Fahrt voraus / bremsen und rückwärts. Das Schiff hat Trägheit. |
-| A / D | Ruder. Wie stark es dreht, hängt von der Fahrt ab. |
-| Maus | Railgun-Turm zielen (±150°, nach achtern verdecken die Aufbauten). |
-| Linksklick halten | Laden (1,2 s), dann loslassen = Schuss. Der Schuss durchschlägt alles in einer Linie. |
-| Länger halten | Überladung: bis doppelter Schaden und breiterer Strahl, aber die Hitze steigt. Bei Überhitzung gibt es eine Fehlzündung (eigener Schaden, 4 s gesperrt). |
+| W / S | Maschinentelegraf eine Stufe hoch bzw. runter: Zurück voll · Stopp · ¼ · ½ · ¾ · Voll. Die Stufe bleibt stehen, das Schiff braucht Zeit, um Fahrt aufzunehmen. |
+| A / D | Ruder eine Stufe nach Backbord bzw. Steuerbord: Hart · Halb · Mitte. Die Stufe bleibt stehen, das Ruder läuft langsam nach. |
+| Maus | Railgun-Turm zielen (±150°). Die rote Raute am Gegner zeigt, wohin du vorhalten musst. |
+| Linksklick | Feuer, sobald geladen (Nachladen ca. 7 s, Ring am Zielkreuz) |
+| Linksklick halten | Überladung: bis doppelter Schaden, durchschlägt mehr Ziele. Die Hitze steigt, bei Überhitzung gibt es eine Fehlzündung. |
+| Mausrad | Zoom (4 Stufen) |
 | Esc | Pause |
 
-Die Flak am Heck bekämpft Schnellboote automatisch.
+Die Flak am Heck bekämpft Schnellboote automatisch. Feindliche Granaten zeigen ihren Einschlagort mit einem roten Ring an. Weich ihnen mit Telegraf und Ruder aus.
 
 ### Grafik
 
@@ -44,5 +47,6 @@ python3 tools/audio/synth.py game/assets/audio       # Sounds neu erzeugen
 
 - Design: [`docs/superpowers/specs/2026-11-22-railgun-design.md`](docs/superpowers/specs/2026-11-22-railgun-design.md)
 - Plan Etappe 1: [`docs/superpowers/plans/2026-11-22-etappe1-gefecht.md`](docs/superpowers/plans/2026-11-22-etappe1-gefecht.md)
+- Design und Plan Etappe 1b: [`docs/superpowers/specs/2026-11-23-etappe1b-schwer-design.md`](docs/superpowers/specs/2026-11-23-etappe1b-schwer-design.md), [`docs/superpowers/plans/2026-11-23-etappe1b-schwer.md`](docs/superpowers/plans/2026-11-23-etappe1b-schwer.md)
 - Alle Spielwerte stehen in `game/core/tuning.gd`.
 - Assets: Modelle und Sounds werden per Skript erzeugt. Die Schriften (Chakra Petch, JetBrains Mono) stehen unter der SIL Open Font License, siehe `game/assets/fonts/`.

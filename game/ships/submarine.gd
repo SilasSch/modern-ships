@@ -15,7 +15,7 @@ var _fired: bool = false
 
 
 func _init() -> void:
-	configure(MODEL, Tuning.SUB_HP, Tuning.SUB_SPEED, 2.5, 0.5, 3.0)
+	configure(MODEL, Tuning.SUB_HP, Tuning.SUB_SPEED, 2.5, 0.5, 1.8)
 	explosion_strength = 1.0
 	collision_radius = 1.0
 	half_length = 7.0
@@ -84,7 +84,7 @@ func _ai(delta: float) -> void:
 func _launch() -> void:
 	var tube := model.find_child("Tube") as Node3D
 	var from := tube.global_position if tube else global_position
-	var to := target.global_position - from
+	var to := lead_point(Tuning.TORPEDO_SPEED) - from
 	if to.length() > Tuning.SUB_RANGE:
 		return
 	var t := Torpedo.new()

@@ -40,6 +40,18 @@ func step(throttle: float, rudder: float, dt: float) -> void:
 			speed = maxf(-max_reverse, speed - accel * -throttle * dt)
 	else:
 		speed -= speed * Tuning.WATER_DRAG * dt
+	_turn_and_move(rudder, dt)
+
+
+## Heavy-ship drive: speed approaches target_speed with ACCEL (gaining) / BRAKE (losing).
+func step_to(target_speed: float, rudder: float, dt: float) -> void:
+	var gaining := absf(target_speed) > absf(speed) and signf(target_speed) == signf(speed) or speed == 0.0
+	var rate := accel if gaining else Tuning.BRAKE
+	speed = move_toward(speed, clampf(target_speed, -max_reverse, max_speed), rate * dt)
+	_turn_and_move(clampf(rudder, -1.0, 1.0), dt)
+
+
+func _turn_and_move(rudder: float, dt: float) -> void:
 	var speed_factor := lerpf(Tuning.TURN_MIN_FACTOR, 1.0, clampf(absf(speed) / max_speed, 0.0, 1.0))
 	var dir_sign := -1.0 if speed < 0.0 else 1.0
 	heading += turn_rate * rudder * speed_factor * dir_sign * dt

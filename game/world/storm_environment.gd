@@ -27,13 +27,13 @@ func _ready() -> void:
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
 	env.fog_enabled = true
 	env.fog_light_color = FOG_COLOR
-	env.fog_density = 0.006
+	env.fog_density = 0.0007
 	env.fog_sky_affect = 0.0
 	env.volumetric_fog_enabled = true
-	env.volumetric_fog_density = 0.012
+	env.volumetric_fog_density = 0.0016
 	env.volumetric_fog_albedo = Color("#2a3a55")
 	env.volumetric_fog_emission = Color("#05080f")
-	env.volumetric_fog_length = 160.0
+	env.volumetric_fog_length = 520.0
 	env.volumetric_fog_gi_inject = 0.0
 	environment = env
 

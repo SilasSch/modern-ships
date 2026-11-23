@@ -3,7 +3,7 @@ extends Node3D
 ## Straight-running torpedo with a visible bubble track. Explodes near the target.
 
 const HIT_DIST := 4.0
-const LIFETIME := 9.0
+const LIFETIME := 18.0
 
 var dir := Vector3.FORWARD
 var target: Node3D
@@ -67,6 +67,8 @@ func _process(delta: float) -> void:
 			return
 	if target and is_instance_valid(target) and target.call(&"can_be_hit"):
 		var d := Vector2(target.global_position.x - global_position.x, target.global_position.z - global_position.z).length()
+		if target.has_method(&"hull_distance"):
+			d = float(target.call(&"hull_distance", p2)) + HIT_DIST - 1.5
 		if d < HIT_DIST:
 			target.call(&"apply_damage", Tuning.TORPEDO_DMG)
 			_explode()

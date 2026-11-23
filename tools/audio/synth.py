@@ -129,12 +129,14 @@ def overcharge_loop():
 
 
 def fire():
-    d = 2.2
-    boom = biquad(noise(d), exp_sweep(7000, 110, d), q=0.9) * env(d, 0.004, curve=3.2)
-    sub = osc(exp_sweep(140, 26, d)) * env(d, 0.003, curve=7.0) * 1.4
-    crack = biquad(noise(d), 2600, mode="hp") * np.exp(-t_axis(d) / 0.025) * 0.9
-    zap = osc(exp_sweep(2400, 180, d)) * np.exp(-t_axis(d) / 0.06) * 0.5
-    return boom + sub + crack + zap
+    d = 3.2
+    t = t_axis(d)
+    boom = biquad(noise(d), exp_sweep(6000, 70, d), q=0.9) * env(d, 0.004, curve=2.6)
+    sub = osc(exp_sweep(110, 22, d)) * env(d, 0.003, curve=4.5) * 1.7
+    crack = biquad(noise(d), 2400, mode="hp") * np.exp(-t / 0.03) * 1.0
+    zap = osc(exp_sweep(2600, 160, d)) * np.exp(-t / 0.07) * 0.5
+    rumble = biquad(noise(d), 140) * np.exp(-t / 1.3) * np.minimum(1, t / 0.15) * 1.4
+    return boom + sub + crack + zap + rumble
 
 
 def misfire():
@@ -231,6 +233,28 @@ def rain_loop():
     return make_loop(x, fade=0.1)
 
 
+def reload_done():
+    d = 0.7
+    t = t_axis(d)
+    clunk = biquad(noise(d), 600) * np.exp(-t / 0.04) * 1.5 + osc(exp_sweep(140, 60, d)) * np.exp(-t / 0.06)
+    hum = osc(np.full(len(t), 220.0)) * 0.25 + osc(np.full(len(t), 440.0)) * 0.12
+    return clunk + hum * np.exp(-t / 0.35) * np.minimum(1, t / 0.05)
+
+
+def telegraph():
+    d = 0.5
+    t = t_axis(d)
+    bell = sum(np.sin(2 * np.pi * f * t) * a for f, a in ((1180, 1.0), (2360, 0.4), (3540, 0.2)))
+    return bell * np.exp(-t / 0.12) + noise(d) * np.exp(-t / 0.004) * 0.4
+
+
+def projectile_whoosh():
+    d = 1.4
+    t = t_axis(d)
+    x = biquad(noise(d), exp_sweep(4500, 300, d), q=2.5, mode="bp") * 2.0
+    return x * np.exp(-t / 0.45) * np.minimum(1, t / 0.01)
+
+
 def ui_click():
     d = 0.06
     t = t_axis(d)
@@ -253,3 +277,6 @@ for i in range(3):
     write("thunder_%d" % i, thunder(i), 0.8)
 write("rain_loop", rain_loop(), 0.35)
 write("ui_click", ui_click(), 0.5)
+write("reload_done", reload_done(), 0.6)
+write("telegraph", telegraph(), 0.45)
+write("projectile_whoosh", projectile_whoosh(), 0.6)

@@ -3,14 +3,6 @@ extends Node3D
 ## One sea battle: storm world, islands, the player destroyer, enemy waves, railgun resolution,
 ## HUD, pause and end screens.
 
-const ISLANDS := [
-	["a", Vector2(72, -62), 18.0],
-	["b", Vector2(-92, -38), 12.0],
-	["c", Vector2(42, 96), 8.0],
-	["b", Vector2(-64, 84), 12.0],
-	["c", Vector2(132, 24), 8.0],
-]
-const BEAM_SPEED := 600.0
 const END_DELAY := 2.2
 
 var waves: Array = WaveDirector.DEFAULT_WAVES
@@ -24,7 +16,7 @@ var blockers: Array = []
 var kills: int = 0
 var elapsed: float = 0.0
 
-var _pending_hits: Array = []  # [{t, enemy, damage, dir}]
+var _rounds: Array[RailgunRound] = []
 var _end_t: float = -1.0
 var _outcome: StringName = &"running"
 var _pause_menu: OverlayMenu
@@ -41,13 +33,14 @@ func _ready() -> void:
 	add_child(ocean)
 	explosions = ExplosionFx.new()
 	add_child(explosions)
-	for isl: Array in ISLANDS:
-		var node: Node3D = (load("res://assets/models/island_%s.glb" % isl[0]) as PackedScene).instantiate()
-		var pos: Vector2 = isl[1]
+	for isl: Dictionary in island_layout():
+		var node: Node3D = (load("res://assets/models/%s.glb" % isl["model"]) as PackedScene).instantiate()
+		var pos: Vector2 = isl["pos"]
 		node.position = Vector3(pos.x, -0.3, pos.y)
 		node.rotation.y = _rng.randf_range(0.0, TAU)
+		node.scale = Vector3.ONE * float(isl["scale"])
 		add_child(node)
-		blockers.append({"center": pos, "radius": float(isl[2]) * 1.0})
+		blockers.append({"center": pos, "radius": float(isl["radius"])})
 	player = (load("res://ships/player_ship.tscn") as PackedScene).instantiate()
 	player.blockers = blockers
 	add_child(player)
@@ -57,7 +50,7 @@ func _ready() -> void:
 	camera.target = player
 	add_child(camera)
 	camera.make_current()
-	ocean.follow = camera
+	ocean.follow = player
 	var weather := Weather.new()
 	weather.storm = storm
 	weather.follow = camera
@@ -71,6 +64,32 @@ func _ready() -> void:
 	_end_menu = OverlayMenu.new()
 	add_child(_end_menu)
 	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+
+
+## Deterministic island layout over the 1.2 km map: 12 islands, 18–45 m, clear of the start.
+static func island_layout() -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1207
+	var out: Array = []
+	var bases := {"island_a": 18.0, "island_b": 12.0, "island_c": 8.0}
+	var tries := 0
+	while out.size() < 12 and tries < 2000:
+		tries += 1
+		var r := rng.randf_range(18.0, 45.0)
+		var lim := Tuning.MAP_HALF - 50.0 - r
+		var p := Vector2(rng.randf_range(-lim, lim), rng.randf_range(-lim, lim))
+		if p.length() - r < 120.0:
+			continue
+		var ok := true
+		for o: Dictionary in out:
+			if p.distance_to(o["pos"]) < r + float(o["radius"]) + 60.0:
+				ok = false
+				break
+		if not ok:
+			continue
+		var model: String = ["island_a", "island_b", "island_c"][out.size() % 3]
+		out.append({"model": model, "pos": p, "radius": r, "scale": r / float(bases[model])})
+	return out
 
 
 func outcome() -> StringName:
@@ -103,7 +122,7 @@ func _process(delta: float) -> void:
 	elapsed += delta if _outcome == &"running" else 0.0
 	for kind: StringName in director.tick(delta):
 		_spawn(kind)
-	_resolve_hits(delta)
+	_step_rounds(delta)
 	if _outcome == &"running":
 		if player.health.is_dead():
 			_finish(&"defeat")
@@ -124,11 +143,11 @@ func _spawn(kind: StringName) -> void:
 	var pos := center
 	for attempt in 12:
 		var ang := atan2(away.y, away.x) + _rng.randf_range(-1.1, 1.1)
-		pos = center + Vector2(cos(ang), sin(ang)) * _rng.randf_range(140.0, 170.0)
-		pos = pos.clamp(Vector2.ONE * -(Tuning.MAP_HALF - 10.0), Vector2.ONE * (Tuning.MAP_HALF - 10.0))
+		pos = center + Vector2(cos(ang), sin(ang)) * _rng.randf_range(460.0, 580.0)
+		pos = pos.clamp(Vector2.ONE * -(Tuning.MAP_HALF - 20.0), Vector2.ONE * (Tuning.MAP_HALF - 20.0))
 		var free := true
 		for b: Dictionary in blockers:
-			if pos.distance_to(b["center"]) < float(b["radius"]) + 12.0:
+			if pos.distance_to(b["center"]) < float(b["radius"]) + 25.0:
 				free = false
 		if free:
 			break
@@ -146,28 +165,30 @@ func _on_enemy_died(_e: Enemy) -> void:
 
 
 func _on_fired(shot: RailgunShot, origin: Vector3, dir: Vector3) -> void:
-	var targets: Array = []
+	var round := RailgunRound.new()
+	round.setup(origin, dir, shot, _hittable_enemies, blockers)
+	add_child(round)
+	_rounds.append(round)
+	var reach := BeamHit.cast(Vector2(origin.x, origin.z), Vector2(dir.x, dir.z), Tuning.PROJECTILE_RANGE, 0.0, [], blockers)
+	var end := origin + dir * float(reach["end_distance"])
+	player.fx.play_muzzle(origin, dir, shot.overcharge, Vector3(end.x, 0.0, end.z))
+
+
+func _hittable_enemies() -> Array:
+	var out: Array = []
 	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
 		if n is Enemy and (n as Enemy).can_be_hit():
-			targets.append(n)
-	var res := BeamHit.cast(Vector2(origin.x, origin.z), Vector2(dir.x, dir.z), Tuning.BEAM_RANGE, shot.half_width, targets, blockers)
-	for h: Dictionary in res["hits"]:
-		_pending_hits.append({"t": float(h["distance"]) / BEAM_SPEED, "enemy": h["target"], "damage": shot.damage, "dir": dir})
-	player.fx.play_shot(origin, dir, float(res["end_distance"]), shot.overcharge)
-	var end_point := origin + dir * float(res["end_distance"])
-	if float(res["end_distance"]) < Tuning.BEAM_RANGE - 0.1:
-		explosions.play(Vector3(end_point.x, 1.0, end_point.z), 0.6)
+			out.append(n)
+	return out
 
 
-func _resolve_hits(delta: float) -> void:
-	for i in range(_pending_hits.size() - 1, -1, -1):
-		var h: Dictionary = _pending_hits[i]
-		h["t"] = float(h["t"]) - delta
-		if float(h["t"]) <= 0.0:
-			_pending_hits.remove_at(i)
-			var e: Enemy = h["enemy"]
-			if is_instance_valid(e) and e.can_be_hit():
-				e.apply_damage(float(h["damage"]), h["dir"])
+func _step_rounds(delta: float) -> void:
+	for i in range(_rounds.size() - 1, -1, -1):
+		var r := _rounds[i]
+		if not is_instance_valid(r) or not r.step(delta):
+			if is_instance_valid(r):
+				r.queue_free()
+			_rounds.remove_at(i)
 
 
 func _on_player_died() -> void:

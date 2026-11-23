@@ -16,15 +16,47 @@ static func cast(origin: Vector2, dir: Vector2, max_range: float, half_width: fl
 	for t: Object in targets:
 		if not t.can_be_hit():
 			continue
+		var reach := float(t.get_hit_radius()) + half_width
+		if t.has_method(&"get_hit_segment"):
+			var seg: PackedVector2Array = t.call(&"get_hit_segment")
+			var r := _segment_to_ray(origin, d, end_distance, seg[0], seg[1])
+			if r.x <= reach:
+				hits.append({"target": t, "distance": r.y})
+			continue
 		var rel: Vector2 = t.get_hit_center() - origin
 		var along := rel.dot(d)
 		if along < 0.0 or along > end_distance:
 			continue
 		var perp := absf(rel.cross(d))
-		if perp <= float(t.get_hit_radius()) + half_width:
+		if perp <= reach:
 			hits.append({"target": t, "distance": along})
 	hits.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["distance"] < b["distance"])
 	return {"end_distance": end_distance, "hits": hits}
+
+
+## Closest approach between the ray segment [origin, origin + d*len] and segment [a, b].
+## Returns Vector2(distance, along-the-ray distance of the closest point).
+static func _segment_to_ray(origin: Vector2, d: Vector2, len: float, a: Vector2, b: Vector2) -> Vector2:
+	var best := Vector2(INF, 0.0)
+	var ray_end := origin + d * len
+	var ab := b - a
+	var denom := d.cross(ab)
+	if absf(denom) > 1e-6:
+		var t := (a - origin).cross(ab) / denom
+		var u := (a - origin).cross(d) / denom
+		if t >= 0.0 and t <= len and u >= 0.0 and u <= 1.0:
+			return Vector2(0.0, t)
+	for p: Vector2 in [a, b]:
+		var along := clampf((p - origin).dot(d), 0.0, len)
+		var dist := p.distance_to(origin + d * along)
+		if dist < best.x:
+			best = Vector2(dist, along)
+	for q: Vector2 in [origin, ray_end]:
+		var s := clampf((q - a).dot(ab) / maxf(ab.length_squared(), 1e-6), 0.0, 1.0)
+		var dist := q.distance_to(a + ab * s)
+		if dist < best.x:
+			best = Vector2(dist, (q - origin).dot(d))
+	return best
 
 
 ## Distance along the ray where it enters the circle, or -1 if it misses / starts inside.

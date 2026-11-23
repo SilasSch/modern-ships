@@ -13,7 +13,7 @@ var _tracer_t: float = 0.0
 
 
 func _init() -> void:
-	configure(MODEL, Tuning.SPEEDBOAT_HP, Tuning.SPEEDBOAT_SPEED, 9.0, 1.7, 2.4)
+	configure(MODEL, Tuning.SPEEDBOAT_HP, Tuning.SPEEDBOAT_SPEED, 9.0, 1.7, 1.8)
 	is_small = true
 	collision_radius = 1.0
 	half_length = 3.0
@@ -23,7 +23,7 @@ func _init() -> void:
 func _ready() -> void:
 	super._ready()
 	_orbit_dir = 1.0 if _rng.randf() < 0.5 else -1.0
-	_orbit_r = _rng.randf_range(25.0, 40.0)
+	_orbit_r = _rng.randf_range(60.0, 90.0)
 	_gun_t = _rng.randf_range(0.0, Tuning.SPEEDBOAT_GUN_INTERVAL)
 	_tracer = MeshInstance3D.new()
 	_tracer.mesh = _tracer_mesh

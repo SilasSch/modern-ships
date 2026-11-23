@@ -11,6 +11,9 @@ var _warn: Label
 var _hint: Label
 var _cursor: CursorRing
 var _edge_warn: Label
+var helm: HelmGauge
+## Warn early: a full-speed turning circle is ~300 m across.
+const EDGE_WARN_DIST := 160.0
 var _hint_t: float = 9.0
 var _t: float = 0.0
 
@@ -48,15 +51,15 @@ func _ready() -> void:
 	_warn = UiTheme.label("ÜBERHITZT", 52, UiTheme.RED, UiTheme.display_bold)
 	_warn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_warn.position = Vector2(-300, -170)
+	_warn.position = Vector2(-300, -220)
 	_warn.size = Vector2(600, 50)
 	_warn.visible = false
 	root.add_child(_warn)
 
-	_hint = UiTheme.label("WASD fahren  ·  Maus zielen  ·  Linksklick halten: laden  ·  länger halten: überladen  ·  Esc: Pause", 21, UiTheme.MUTED, UiTheme.mono)
+	_hint = UiTheme.label("W/S Telegraf  ·  A/D Ruder  ·  Mausrad Zoom  ·  Klick: Feuer  ·  Halten: Überladen  ·  Esc: Pause", 21, UiTheme.MUTED, UiTheme.mono)
 	_hint.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint.position = Vector2(-800, -60)
+	_hint.position = Vector2(-800, -36)
 	_hint.size = Vector2(1600, 30)
 	root.add_child(_hint)
 
@@ -68,12 +71,23 @@ func _ready() -> void:
 	_edge_warn.visible = false
 	root.add_child(_edge_warn)
 
+	helm = HelmGauge.new()
+	helm.control = battle.player.control if battle and battle.player else null
+	helm.motion = battle.player.motion if battle and battle.player else null
+	helm.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	helm.position = Vector2(-300, -150)
+	root.add_child(helm)
+
 	var markers := EdgeMarkers.new()
 	markers.battle = battle
 	root.add_child(markers)
 
 	_cursor = CursorRing.new()
 	root.add_child(_cursor)
+
+
+static func knots(mps: float) -> int:
+	return roundi(mps * 1.944)
 
 
 ## Clamps a screen point into the rect inset by margin (off-screen marker placement).
@@ -87,6 +101,7 @@ func _process(delta: float) -> void:
 		return
 	var p := battle.player
 	_cursor.railgun = p.railgun
+	_cursor.ship = p
 	_cursor.visible = battle.outcome() == &"running" and not battle.get_tree().paused
 	var frac := p.health.fraction()
 	_hull_fill.size.x = 340.0 * frac
@@ -103,6 +118,6 @@ func _process(delta: float) -> void:
 		_wave_label.text = "WELLE %d / %d  ·  %d %s" % [d.current_wave, d.total_waves(), d.alive, "FEIND" if d.alive == 1 else "FEINDE"]
 	_warn.visible = p.railgun.state == RailgunState.State.LOCKED and fmod(_t, 0.5) < 0.32
 	var edge := Tuning.MAP_HALF - maxf(absf(p.motion.position.x), absf(p.motion.position.y))
-	_edge_warn.visible = edge < 25.0 and fmod(_t, 0.8) < 0.55
+	_edge_warn.visible = edge < EDGE_WARN_DIST and fmod(_t, 0.8) < 0.55
 	_hint_t -= delta
 	_hint.modulate.a = clampf(_hint_t, 0.0, 1.0)

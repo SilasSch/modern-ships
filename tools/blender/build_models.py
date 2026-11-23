@@ -290,10 +290,12 @@ def split_hull(stations, split_y, deck_mat, hull_mat, bow, stern, bevel):
     bw.build("BowHull", bow, bevel=bevel)
 
 
-def small_turret(part, center, barrel_len, mat="EnemyHull"):
+def small_turret(part, center, barrel_len, mat="EnemyHull", k=1.0, barrels=1):
     x, y, z = center
-    part.tapered((x, y, z), (0.42, 0.5), (0.3, 0.36), 0.32, mat, top_shift=(0, -0.08))
-    part.box((x, y + 0.35 + barrel_len / 2, z + 0.2), (0.05, barrel_len / 2, 0.05), "Accent")
+    part.tapered((x, y, z), (0.42 * k, 0.5 * k), (0.3 * k, 0.36 * k), 0.32 * k, mat, top_shift=(0, -0.08 * k))
+    for i in range(barrels):
+        bx = x + (i - (barrels - 1) / 2) * 0.16 * k
+        part.box((bx, y + 0.35 * k + barrel_len / 2, z + 0.2 * k), (0.05 * k, barrel_len / 2, 0.05 * k), "Accent")
 
 
 def build_frigate():
@@ -424,6 +426,118 @@ def build_island(name, radius, seed):
     return ob
 
 
+# ---------------------------------------------------------------- stage 1b: heavy ships
+
+def build_battlecruiser():
+    stations = scale_stations(DESTROYER_STATIONS, 40 / 24.4, 7 / 4.6, 1.5)
+    hull = Part()
+    hull.loft([ring(st) for st in stations], "Deck", "HullDark")
+    hull.build("Hull", None, bevel=0.09)
+    D = 1.95
+    s = Part()
+    s.tapered((0, -4.0, D), (2.6, 6.0), (2.0, 5.0), 2.8, "Superstructure", top_shift=(0, -0.5))
+    s.tapered((0, -4.5, D + 2.8), (2.0, 3.6), (1.5, 2.8), 1.9, "Superstructure", top_shift=(0, -0.3))
+    s.tapered((0, -5.0, D + 4.7), (1.4, 1.4), (0.45, 0.45), 5.0, "Superstructure")
+    s.tapered((0, -5.0, D + 9.7), (0.18, 0.18), (0.05, 0.05), 1.8, "Accent")
+    for yaw in (45, -45, 135, -135):
+        r = rot(yaw, -14)
+        off = rot(yaw) @ Vector((0, 1.05, 0))
+        s.box((off.x, -5.0 + off.y, D + 6.3), (0.82, 0.07, 0.82), "Accent", rot=r)
+    s.box((0, -4.5 + 3.55, D + 3.85), (1.62, 0.04, 0.17), "Window", rot=rot(0, 24))
+    for x in (-1.0, 1.0):
+        s.box((x * 2.48, -4.0, D + 0.8), (0.03, 5.6, 0.07), "PlayerAccent")
+        s.box((x * 2.33, -13.0, D + 0.8), (0.03, 2.7, 0.07), "PlayerAccent")
+    s.tapered((0, -13.0, D), (2.4, 3.0), (2.0, 2.7), 2.2, "Superstructure", top_shift=(0, 0.15))
+    s.box((0, -17.6, D + 0.03), (2.2, 1.9, 0.03), "Accent")
+    for (cx, cy, hx, hy) in ((0, -16.0, 1.4, 0.06), (0, -19.2, 1.4, 0.06), (-1.34, -17.6, 0.06, 1.6), (1.34, -17.6, 0.06, 1.6)):
+        s.box((cx, cy, D + 0.07), (hx, hy, 0.015), "Marking")
+    vls_grid(s, 3.6, 6, 2, D)
+    vls_grid(s, 15.0, 4, 2, D)
+    s.box((-2.4, -2.0, D + 2.2), (0.09, 0.18, 0.09), "NavRed")
+    s.box((2.4, -2.0, D + 2.2), (0.09, 0.18, 0.09), "NavGreen")
+    s.box((0, -5.0, D + 11.6), (0.09, 0.09, 0.09), "NavRed")
+    s.build("Superstructure", None, bevel=0.06)
+    empty("Bridge", (0, -4.5, D + 4.7))
+
+    pivot = empty("TurretPivot", (0, 10.0, D))
+    g = Part()
+    g.tapered((0, 0.2, 0), (2.0, 2.4), (1.5, 1.85), 0.9, "Superstructure")
+    g.tapered((0, 1.1, 0.9), (1.2, 1.7), (0.9, 1.3), 0.7, "Superstructure", top_shift=(0, 0.3))
+    zr = 1.25
+    for x in (-0.42, 0.42):
+        g.box((x, 7.9, zr), (0.11, 6.1, 0.18), "Rail")
+    g.box((0, 7.9, zr), (0.26, 6.0, 0.04), "Energy")
+    for y in (3.0, 5.0, 7.0, 9.0, 11.0, 13.0):
+        g.box((0, y, zr + 0.46), (0.74, 0.14, 0.08), "Accent")
+        g.box((0, y, zr - 0.46), (0.74, 0.14, 0.08), "Accent")
+        g.box((-0.66, y, zr), (0.08, 0.14, 0.46), "Accent")
+        g.box((0.66, y, zr), (0.08, 0.14, 0.46), "Accent")
+    g.box((0, 14.2, zr), (0.62, 0.18, 0.3), "Accent")
+    railgun = g.build("Railgun", pivot, bevel=0.035)
+    empty("Muzzle", (0, 14.6, zr), railgun)
+
+    flak_pivot = empty("FlakPivot", (0, -13.0, D + 2.2))
+    f = Part()
+    f.tapered((0, 0, 0), (0.6, 0.6), (0.46, 0.46), 0.6, "Superstructure")
+    for x in (-0.16, 0.16):
+        f.box((x, 0.8, 0.4), (0.055, 0.75, 0.055), "Accent")
+    f.build("FlakGun", flak_pivot, bevel=0.025)
+
+
+def _enemy_top(stern, bow, D, k, deck_y, deck_half, mast_h):
+    s = Part()
+    s.tapered((0, deck_y, D), (1.2 * k, deck_half), (0.9 * k, deck_half * 0.8), 1.5 * k, "EnemyHull", top_shift=(0, -0.25 * k))
+    s.tapered((0, deck_y - 0.3 * k, D + 1.5 * k), (0.6 * k, 0.6 * k), (0.2 * k, 0.2 * k), mast_h, "EnemyHull")
+    for x in (-1.0, 1.0):
+        s.box((x * 1.06 * k, deck_y, D + 0.8 * k), (0.02 * k, deck_half * 0.9, 0.05 * k), "EnemyAccent")
+    s.box((0, deck_y - 0.3 * k, D + 1.5 * k + mast_h + 0.1), (0.08 * k, 0.08 * k, 0.08 * k), "EnemyAccent")
+    s.box((0, deck_y + deck_half * 0.82, D + 1.15 * k), (0.8 * k, 0.03, 0.1 * k), "Window", rot=rot(0, 26))
+    return s
+
+
+def build_enemy_destroyer():
+    stations = scale_stations(DESTROYER_STATIONS, 22 / 24.4, 3.6 / 4.6, 1.0)
+    bow = empty("Bow", (0, 0, 0))
+    stern = empty("Stern", (0, 0, 0))
+    split_hull(stations, 0.0, "EnemyDeck", "EnemyHull", bow, stern, 0.05)
+    D = 1.3
+    s = _enemy_top(stern, bow, D, 1.15, -2.0, 2.8, 2.6)
+    small_turret(s, (0, -7.6, D), 1.6, k=1.1)
+    for x in (-1.0, 1.0):
+        s.tapered((x * 1.15, -4.8, D), (0.25, 0.8), (0.2, 0.7), 0.4, "Accent")
+    s.build("SternTop", stern, bevel=0.035)
+    empty("Gun_1", (0, -7.6 - 2.0, D + 0.25), stern)
+    empty("Torp_L", (-1.3, -4.8, D + 0.4), stern)
+    empty("Torp_R", (1.3, -4.8, D + 0.4), stern)
+    b = Part()
+    small_turret(b, (0, 5.2, D), 1.8, k=1.15)
+    vls_grid(b, 2.0, 2, 2, D)
+    b.build("BowTop", bow, bevel=0.03)
+    empty("Gun_0", (0, 5.2 + 2.3, D + 0.25), bow)
+
+
+def build_cruiser():
+    stations = scale_stations(DESTROYER_STATIONS, 34 / 24.4, 6.0 / 4.6, 1.3)
+    bow = empty("Bow", (0, 0, 0))
+    stern = empty("Stern", (0, 0, 0))
+    split_hull(stations, 0.0, "EnemyDeck", "EnemyHull", bow, stern, 0.07)
+    D = 1.7
+    s = _enemy_top(stern, bow, D, 1.9, -3.0, 4.6, 4.2)
+    small_turret(s, (0, -10.5, D), 3.0, k=1.9, barrels=2)
+    small_turret(s, (0, -13.8, D), 3.0, k=1.9, barrels=2)
+    s.build("SternTop", stern, bevel=0.05)
+    empty("Gun_2", (0, -10.5 + 3.8, D + 0.4), stern)
+    empty("Gun_3", (0, -13.8 + 3.8, D + 0.4), stern)
+    b = Part()
+    small_turret(b, (0, 9.6, D), 3.0, k=1.9, barrels=2)
+    small_turret(b, (0, 6.0, D + 0.7), 3.0, k=1.9, barrels=2)
+    b.tapered((0, 6.0, D), (0.9, 0.9), (0.8, 0.8), 0.7, "EnemyHull")
+    vls_grid(b, 2.0, 4, 2, D)
+    b.build("BowTop", bow, bevel=0.045)
+    empty("Gun_0", (0, 9.6 + 3.8, D + 0.4), bow)
+    empty("Gun_1", (0, 6.0 + 3.8, D + 1.1), bow)
+
+
 # ---------------------------------------------------------------- export
 
 def export(name, builder, *args):
@@ -443,3 +557,6 @@ export("submarine", build_submarine)
 export("island_a", build_island, "IslandA", 18.0, 1)
 export("island_b", build_island, "IslandB", 12.0, 2)
 export("island_c", build_island, "IslandC", 8.0, 3)
+export("battlecruiser", build_battlecruiser)
+export("enemy_destroyer", build_enemy_destroyer)
+export("cruiser", build_cruiser)

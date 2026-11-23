@@ -9,20 +9,20 @@ func before_each() -> void:
 	ship = PlayerShipScene.instantiate()
 	add_child_autofree(ship)
 	ship.aim_point = Vector3(0, 0, -100)
+	ship.railgun.tick(Tuning.RELOAD_TIME + 0.01)
 
 
 func test_focus_out_cancels_charge() -> void:
 	ship._handle_fire_input(true)
-	assert_eq(ship.railgun.state, RailgunState.State.CHARGING)
+	assert_eq(ship.railgun.state, RailgunState.State.HOLDING)
 	ship._notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
 	assert_eq(ship.railgun.state, RailgunState.State.READY)
 
 
 func test_dead_ship_ignores_fire() -> void:
 	watch_signals(ship)
-	ship.health.damage(1000.0)
+	ship.health.damage(100000.0)
 	ship._handle_fire_input(true)
-	ship.railgun.tick(1.3)
 	ship._handle_fire_input(false)
 	assert_signal_not_emitted(ship, "fired")
 	assert_eq(ship.railgun.state, RailgunState.State.READY)
@@ -37,7 +37,7 @@ func test_charge_started_signal() -> void:
 func test_fire_emits_signal_with_muzzle_origin() -> void:
 	watch_signals(ship)
 	ship._handle_fire_input(true)
-	ship.railgun.tick(1.2)
+	ship.railgun.tick(0.1)
 	var expected_origin := ship.muzzle_transform().origin
 	ship._handle_fire_input(false)
 	assert_signal_emitted(ship, "fired")
@@ -61,7 +61,7 @@ func test_misfire_damages_self() -> void:
 
 func test_apply_damage_emits_died_once() -> void:
 	watch_signals(ship)
-	ship.apply_damage(1000.0)
+	ship.apply_damage(100000.0)
 	ship.apply_damage(10.0)
 	assert_signal_emit_count(ship, "died", 1)
 	assert_false(ship.can_be_hit())
@@ -69,7 +69,65 @@ func test_apply_damage_emits_died_once() -> void:
 
 func test_moves_forward_with_input() -> void:
 	ship.use_device_input = false
-	ship.throttle_input = 1.0
-	for i in 60:
+	ship.control.telegraph = 4
+	for i in 150:
 		ship._process(1.0 / 30.0)
 	assert_lt(ship.global_position.z, -1.0)
+
+
+func _key(code: Key, echo: bool) -> InputEventKey:
+	var ev := InputEventKey.new()
+	ev.physical_keycode = code
+	ev.pressed = true
+	ev.echo = echo
+	return ev
+
+
+func test_w_steps_telegraph_once_per_press() -> void:
+	ship._unhandled_input(_key(KEY_W, false))
+	assert_eq(ship.control.telegraph, 1)
+	ship._unhandled_input(_key(KEY_W, true))
+	assert_eq(ship.control.telegraph, 1, "key repeat must not skip steps")
+	ship._unhandled_input(_key(KEY_A, false))
+	assert_eq(ship.control.rudder_setting, 1)
+	ship._unhandled_input(_key(KEY_S, false))
+	ship._unhandled_input(_key(KEY_S, false))
+	assert_eq(ship.control.telegraph, -1)
+
+
+func test_ship_reaches_half_speed_slowly() -> void:
+	ship.use_device_input = false
+	ship.control.telegraph = 2
+	for i in 300:
+		ship._process(1.0 / 30.0)
+	assert_lt(ship.motion.speed, 6.0)
+	for i in 1200:
+		ship._process(1.0 / 30.0)
+	assert_almost_eq(ship.motion.speed, 6.0, 0.05)
+
+
+func test_click_fires_after_reload() -> void:
+	watch_signals(ship)
+	ship._handle_fire_input(true)
+	ship._handle_fire_input(false)
+	var shot: RailgunShot = get_signal_parameters(ship, "fired")[0]
+	assert_almost_eq(shot.damage, 250.0, 0.01)
+
+
+func test_hold_during_reload_then_overcharge() -> void:
+	var fresh: PlayerShip = PlayerShipScene.instantiate()
+	add_child_autofree(fresh)
+	fresh._process(5.0)
+	Input.action_press(&"fire")
+	fresh._process(2.1)
+	assert_eq(fresh.railgun.state, RailgunState.State.HOLDING)
+	fresh._process(2.5)
+	watch_signals(fresh)
+	Input.action_release(&"fire")
+	fresh._process(0.05)
+	var shot: RailgunShot = get_signal_parameters(fresh, "fired")[0]
+	assert_almost_eq(shot.overcharge, 1.0, 0.01)
+
+
+func after_each() -> void:
+	Input.action_release(&"fire")

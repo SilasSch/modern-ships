@@ -27,11 +27,11 @@ func test_beam_goes_through_the_cursor() -> void:
 	ship.use_device_input = false
 	var pivot := ship.turret_pivot.global_position
 	ship.aim_point = Vector3(pivot.x + 30.0, 0.0, pivot.z)
-	for i in 120:
+	for i in 600:
 		ship._process(1.0 / 30.0)
 	watch_signals(ship)
 	ship._handle_fire_input(true)
-	ship.railgun.tick(1.2)
+	ship.railgun.tick(0.1)
 	ship._handle_fire_input(false)
 	var dir: Vector3 = get_signal_parameters(ship, "fired")[2]
 	assert_almost_eq(dir.z, 0.0, 0.02, "beam must pass through the aim point")
@@ -45,20 +45,32 @@ func test_camera_frames_engagement_ranges() -> void:
 	var cam := FollowCamera.new()
 	cam.target = ship
 	cam.mouse_aim = false
+	cam.zoom_index = 2
 	add_child_autofree(cam)
 	cam.make_current()
-	ship.aim_point = ship.global_position + Vector3(0, 0, -100)
-	for i in 120:
+	ship.aim_point = ship.global_position + Vector3(0, 0, -400)
+	for i in 600:
 		cam._process(1.0 / 30.0)
 	var p := ship.global_position
-	assert_true(cam.is_position_in_frustum(p + Vector3(0, 0, -80)), "80 m ahead visible")
-	assert_true(cam.is_position_in_frustum(p + Vector3(60, 0, 0)), "60 m to the side visible")
-	assert_true(cam.is_position_in_frustum(p + Vector3(0, 0, 30)), "30 m behind visible")
+	assert_true(cam.is_position_in_frustum(p + Vector3(0, 0, -300)), "300 m ahead visible")
+	assert_true(cam.is_position_in_frustum(p + Vector3(200, 0, 0)), "200 m to the side visible")
+	assert_true(cam.is_position_in_frustum(p + Vector3(0, 0, 60)), "60 m behind visible")
+
+
+func test_zoom_clamps() -> void:
+	var cam := FollowCamera.new()
+	add_child_autofree(cam)
+	for i: int in 5:
+		cam.zoom_out()
+	assert_eq(cam.zoom_index, FollowCamera.ZOOM_LEVELS.size() - 1)
+	for i: int in 9:
+		cam.zoom_in()
+	assert_eq(cam.zoom_index, 0)
 
 
 func test_ranged_enemies_fight_inside_the_view() -> void:
-	assert_lte(Tuning.FRIGATE_STANDOFF_MAX, 85.0)
-	assert_lte(Tuning.SUB_ATTACK_DIST, 60.0)
+	assert_lte(Tuning.FRIGATE_STANDOFF_MAX, 450.0)
+	assert_lte(Tuning.SUB_ATTACK_DIST, 300.0)
 
 
 func test_offscreen_marker_clamps_to_screen_edge() -> void:
@@ -118,16 +130,14 @@ func test_small_hit_does_not_use_explosion_pool() -> void:
 # 6 -------------------------------------------------------------- holding fire through cooldown starts charging
 func test_held_fire_starts_charge_after_cooldown() -> void:
 	var ship := _ship()
-	ship._handle_fire_input(true)
-	ship.railgun.tick(1.2)
-	ship._handle_fire_input(false)
-	assert_eq(ship.railgun.state, RailgunState.State.COOLDOWN)
+	assert_eq(ship.railgun.state, RailgunState.State.LOADING)
 	Input.action_press(&"fire")
-	ship._process(1.1)
-	assert_eq(ship.railgun.state, RailgunState.State.CHARGING)
+	ship._process(Tuning.RELOAD_TIME + 0.1)
+	assert_eq(ship.railgun.state, RailgunState.State.HOLDING, "holding through the reload starts the hold")
 	Input.action_release(&"fire")
-	ship._process(0.1)
-	assert_eq(ship.railgun.state, RailgunState.State.READY, "missed release events are recovered")
+	watch_signals(ship)
+	ship._process(0.05)
+	assert_signal_emitted(ship, "fired", "a missed release event still fires")
 
 
 # 7 -------------------------------------------------------------- medium quality cuts particles
