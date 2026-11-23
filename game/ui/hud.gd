@@ -11,6 +11,7 @@ var _warn: Label
 var _hint: Label
 var _cursor: CursorRing
 var _edge_warn: Label
+var helm: HelmGauge
 var _hint_t: float = 9.0
 var _t: float = 0.0
 
@@ -48,15 +49,15 @@ func _ready() -> void:
 	_warn = UiTheme.label("ÜBERHITZT", 52, UiTheme.RED, UiTheme.display_bold)
 	_warn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_warn.position = Vector2(-300, -170)
+	_warn.position = Vector2(-300, -220)
 	_warn.size = Vector2(600, 50)
 	_warn.visible = false
 	root.add_child(_warn)
 
-	_hint = UiTheme.label("WASD fahren  ·  Maus zielen  ·  Linksklick halten: laden  ·  länger halten: überladen  ·  Esc: Pause", 21, UiTheme.MUTED, UiTheme.mono)
+	_hint = UiTheme.label("W/S Telegraf  ·  A/D Ruder  ·  Mausrad Zoom  ·  Klick: Feuer  ·  Halten: Überladen  ·  Esc: Pause", 21, UiTheme.MUTED, UiTheme.mono)
 	_hint.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint.position = Vector2(-800, -60)
+	_hint.position = Vector2(-800, -36)
 	_hint.size = Vector2(1600, 30)
 	root.add_child(_hint)
 
@@ -68,12 +69,23 @@ func _ready() -> void:
 	_edge_warn.visible = false
 	root.add_child(_edge_warn)
 
+	helm = HelmGauge.new()
+	helm.control = battle.player.control if battle and battle.player else null
+	helm.motion = battle.player.motion if battle and battle.player else null
+	helm.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	helm.position = Vector2(-300, -150)
+	root.add_child(helm)
+
 	var markers := EdgeMarkers.new()
 	markers.battle = battle
 	root.add_child(markers)
 
 	_cursor = CursorRing.new()
 	root.add_child(_cursor)
+
+
+static func knots(mps: float) -> int:
+	return roundi(mps * 1.944)
 
 
 ## Clamps a screen point into the rect inset by margin (off-screen marker placement).
