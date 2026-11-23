@@ -35,3 +35,22 @@ func test_ocean_forwards_trench_and_charge() -> void:
 	ocean.set_charge(Vector3(3, 0, 4), 0.5)
 	assert_eq(ocean.effects.trench_data()[0], Vector4(0, 0, 10, -5))
 	assert_eq(ocean.effects.charge_pos, Vector2(3, 4))
+
+
+func test_trench_meta_has_speed() -> void:
+	var e := OceanEffects.new()
+	e.add_trench(Vector2.ZERO, Vector2(100, 0), 3.0, 600.0)
+	assert_eq(e.trench_meta()[0], Vector3(0.0, 3.0, 600.0))
+
+
+func test_far_ocean_follows() -> void:
+	var ocean := Ocean.new()
+	add_child_autofree(ocean)
+	var target := Node3D.new()
+	add_child_autofree(target)
+	ocean.follow = target
+	target.global_position = Vector3(333.0, 0, -127.0)
+	ocean._process(0.016)
+	var far := ocean.get_node("FarOcean") as MeshInstance3D
+	assert_almost_eq(far.global_position.x, 333.0, Ocean.SIZE / Ocean.SUBDIV)
+	assert_true((far.material_override as ShaderMaterial).get_shader_parameter("far_lod"))

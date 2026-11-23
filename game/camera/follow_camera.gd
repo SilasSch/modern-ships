@@ -4,9 +4,11 @@ extends Camera3D
 ## Also projects the mouse onto the sea (y = 0) to set the ship's aim point.
 
 @export var target: PlayerShip
-@export var pitch_deg: float = 58.0
-@export var distance: float = 110.0
-@export var lead: float = 12.0
+## Zoom levels: [distance, pitch]. Far levels look flatter so more sea ahead is visible.
+const ZOOM_LEVELS: Array[Vector2] = [Vector2(140, 60), Vector2(210, 54), Vector2(300, 48), Vector2(420, 44)]
+@export var zoom_index: int = 1
+var pitch_deg: float = 54.0
+var distance: float = 210.0
 @export var mouse_aim: bool = true
 
 var base_fov: float = 46.0
@@ -19,8 +21,27 @@ var _charge_zoom: float = 0.0
 
 func _ready() -> void:
 	fov = base_fov
+	distance = ZOOM_LEVELS[zoom_index].x
+	pitch_deg = ZOOM_LEVELS[zoom_index].y
 	if target:
 		_focus = target.global_position
+
+
+func zoom_in() -> void:
+	zoom_index = maxi(zoom_index - 1, 0)
+
+
+func zoom_out() -> void:
+	zoom_index = mini(zoom_index + 1, ZOOM_LEVELS.size() - 1)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	var mb := event as InputEventMouseButton
+	if mb and mb.pressed:
+		if mb.button_index == MOUSE_BUTTON_WHEEL_UP:
+			zoom_in()
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			zoom_out()
 
 
 func set_feel(offset: Vector3, kick: float, fov_add: float, charge_zoom: float) -> void:
@@ -40,11 +61,14 @@ func _process(delta: float) -> void:
 	var ship_pos := target.global_position
 	var to_aim := target.aim_point - ship_pos
 	to_aim.y = 0.0
-	var lead_vec := to_aim.limit_length(lead)
+	var level := ZOOM_LEVELS[zoom_index]
+	distance = lerpf(distance, level.x, 1.0 - exp(-2.5 * delta))
+	pitch_deg = lerpf(pitch_deg, level.y, 1.0 - exp(-2.5 * delta))
+	var lead_vec := to_aim.limit_length(distance * 0.15)
 	var desired := Vector3(ship_pos.x, 0.0, ship_pos.z) + lead_vec * (1.0 - _charge_zoom * 0.4)
-	_focus = _focus.lerp(desired, 1.0 - exp(-3.5 * delta))
+	_focus = _focus.lerp(desired, 1.0 - exp(-1.8 * delta))
 	var pitch := deg_to_rad(pitch_deg)
-	var dist := distance * (1.0 - _charge_zoom * 0.12) + _kick * 2.5
+	var dist := distance * (1.0 - _charge_zoom * 0.08) + _kick * 4.0
 	var offset := Vector3(0.0, sin(pitch), cos(pitch)) * dist
 	global_position = _focus + offset + _feel_offset
 	look_at(_focus + _feel_offset * 0.35, Vector3.UP)

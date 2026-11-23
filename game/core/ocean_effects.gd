@@ -11,7 +11,7 @@ var charge_amount: float = 0.0
 
 var _rings := PackedVector4Array()
 var _trenches := PackedVector4Array()
-var _trench_meta := PackedVector2Array()
+var _trench_meta := PackedVector3Array()
 var _ring_i: int = 0
 var _trench_i: int = 0
 
@@ -24,7 +24,7 @@ func _init() -> void:
 	_trench_meta.resize(TRENCH_SLOTS)
 	for i in TRENCH_SLOTS:
 		_trenches[i] = Vector4.ZERO
-		_trench_meta[i] = Vector2(INACTIVE_AGE, 1.0)
+		_trench_meta[i] = Vector3(INACTIVE_AGE, 1.0, 0.0)
 
 
 func add_ring(pos: Vector2, strength: float) -> void:
@@ -32,9 +32,10 @@ func add_ring(pos: Vector2, strength: float) -> void:
 	_ring_i = (_ring_i + 1) % RING_SLOTS
 
 
-func add_trench(from: Vector2, to: Vector2, width: float) -> void:
+## speed > 0: the trench opens progressively behind a projectile travelling at that speed.
+func add_trench(from: Vector2, to: Vector2, width: float, speed: float = 0.0) -> void:
 	_trenches[_trench_i] = Vector4(from.x, from.y, to.x, to.y)
-	_trench_meta[_trench_i] = Vector2(0.0, width)
+	_trench_meta[_trench_i] = Vector3(0.0, width, speed)
 	_trench_i = (_trench_i + 1) % TRENCH_SLOTS
 
 
@@ -64,5 +65,5 @@ func trench_data() -> PackedVector4Array:
 	return _trenches
 
 
-func trench_meta() -> PackedVector2Array:
+func trench_meta() -> PackedVector3Array:
 	return _trench_meta

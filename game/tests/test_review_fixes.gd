@@ -45,20 +45,32 @@ func test_camera_frames_engagement_ranges() -> void:
 	var cam := FollowCamera.new()
 	cam.target = ship
 	cam.mouse_aim = false
+	cam.zoom_index = 2
 	add_child_autofree(cam)
 	cam.make_current()
-	ship.aim_point = ship.global_position + Vector3(0, 0, -100)
-	for i in 120:
+	ship.aim_point = ship.global_position + Vector3(0, 0, -400)
+	for i in 600:
 		cam._process(1.0 / 30.0)
 	var p := ship.global_position
-	assert_true(cam.is_position_in_frustum(p + Vector3(0, 0, -80)), "80 m ahead visible")
-	assert_true(cam.is_position_in_frustum(p + Vector3(60, 0, 0)), "60 m to the side visible")
-	assert_true(cam.is_position_in_frustum(p + Vector3(0, 0, 30)), "30 m behind visible")
+	assert_true(cam.is_position_in_frustum(p + Vector3(0, 0, -300)), "300 m ahead visible")
+	assert_true(cam.is_position_in_frustum(p + Vector3(200, 0, 0)), "200 m to the side visible")
+	assert_true(cam.is_position_in_frustum(p + Vector3(0, 0, 60)), "60 m behind visible")
+
+
+func test_zoom_clamps() -> void:
+	var cam := FollowCamera.new()
+	add_child_autofree(cam)
+	for i: int in 5:
+		cam.zoom_out()
+	assert_eq(cam.zoom_index, FollowCamera.ZOOM_LEVELS.size() - 1)
+	for i: int in 9:
+		cam.zoom_in()
+	assert_eq(cam.zoom_index, 0)
 
 
 func test_ranged_enemies_fight_inside_the_view() -> void:
-	assert_lte(Tuning.FRIGATE_STANDOFF_MAX, 85.0)
-	assert_lte(Tuning.SUB_ATTACK_DIST, 60.0)
+	assert_lte(Tuning.FRIGATE_STANDOFF_MAX, 450.0)
+	assert_lte(Tuning.SUB_ATTACK_DIST, 300.0)
 
 
 func test_offscreen_marker_clamps_to_screen_edge() -> void:

@@ -68,4 +68,4 @@ const SUB_ATTACK_DIST: float = 55.0
 
 # --- Flow ---
 const WAVE_DELAY: float = 3.0
-const MAP_HALF: float = 200.0
+const MAP_HALF: float = 600.0
