@@ -21,16 +21,17 @@ const HITSTOP: float = 0.08
 
 # --- Player ship ---
 const PLAYER_HULL: float = 300.0
-const MAX_SPEED: float = 14.0
-const MAX_REVERSE: float = 5.0
-const ACCEL: float = 3.0
-const BRAKE: float = 5.0
+const MAX_SPEED: float = 12.0
+const MAX_REVERSE: float = 4.5
+const ACCEL: float = 0.5
+const BRAKE: float = 0.8
 const WATER_DRAG: float = 0.6
-const TURN_RATE: float = 0.45
-const TURN_MIN_FACTOR: float = 0.15
+const TURN_RATE: float = 0.08
+const TURN_MIN_FACTOR: float = 0.1
+const RUDDER_SHIFT_TIME: float = 3.0
 
 # --- Turret ---
-const TRAVERSE_RATE: float = 1.4
+const TRAVERSE_RATE: float = 0.45
 const TURRET_ARC: float = deg_to_rad(150.0)
 
 # --- Flak ---

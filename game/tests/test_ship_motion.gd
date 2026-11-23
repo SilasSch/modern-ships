@@ -13,8 +13,8 @@ func _run(throttle: float, rudder: float, seconds: float) -> void:
 
 
 func test_accelerates_to_max_speed_not_beyond() -> void:
-	_run(1.0, 0.0, 20.0)
-	assert_almost_eq(m.speed, 14.0, 0.001)
+	_run(1.0, 0.0, 60.0)
+	assert_almost_eq(m.speed, Tuning.MAX_SPEED, 0.001)
 
 
 func test_moves_along_forward_vector() -> void:
@@ -25,13 +25,13 @@ func test_moves_along_forward_vector() -> void:
 
 func test_turns_slowly_at_standstill() -> void:
 	_run(0.0, 1.0, 1.0)
-	assert_almost_eq(m.heading, 0.45 * 0.15, 0.002)
+	assert_almost_eq(m.heading, Tuning.TURN_RATE * Tuning.TURN_MIN_FACTOR, 0.002)
 
 
 func test_turns_full_rate_at_max_speed() -> void:
-	m.speed = 14.0
+	m.speed = Tuning.MAX_SPEED
 	m.step(1.0, 1.0, 0.1)
-	assert_almost_eq(m.heading, 0.045, 0.001)
+	assert_almost_eq(m.heading, Tuning.TURN_RATE * 0.1, 0.001)
 
 
 func test_positive_rudder_turns_left() -> void:
@@ -41,15 +41,15 @@ func test_positive_rudder_turns_left() -> void:
 
 
 func test_coasts_to_stop() -> void:
-	m.speed = 14.0
+	m.speed = Tuning.MAX_SPEED
 	_run(0.0, 0.0, 15.0)
 	assert_lt(m.speed, 1.0)
 	assert_gt(m.speed, -0.001)
 
 
 func test_reverse_capped() -> void:
-	_run(-1.0, 0.0, 20.0)
-	assert_almost_eq(m.speed, -5.0, 0.001)
+	_run(-1.0, 0.0, 60.0)
+	assert_almost_eq(m.speed, -Tuning.MAX_REVERSE, 0.001)
 
 
 func test_island_pushes_ship_out_and_kills_inward_speed() -> void:
