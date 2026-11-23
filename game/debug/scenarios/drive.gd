@@ -15,16 +15,16 @@ func run(c: Node) -> void:
 	cam.make_current()
 	(c.find("Weather") as Weather).follow = cam
 	ship.aim_point = Vector3(40, 0, -40)
-	ship.throttle_input = 1.0
+	ship.control.telegraph = 4
 	await c.wait(1.5)
 	await c.shot("drive_0")
 	await c.wait(2.5)
 	await c.shot("drive_1")
-	ship.rudder_input = 1.0
+	ship.control.rudder_setting = 2
 	ship.aim_point = Vector3(-60, 0, 0)
 	await c.wait(3.0)
 	await c.shot("drive_turn")
-	ship.rudder_input = 0.0
+	ship.control.rudder_setting = 0
 	ship.aim_point = ship.global_position + Vector3(0, 0, 60)
 	await c.wait(2.0)
 	await c.shot("drive_aim_aft")

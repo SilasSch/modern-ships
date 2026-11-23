@@ -7,21 +7,21 @@ signal misfired()
 signal damaged(amount: float)
 signal died()
 signal charge_started()
+signal helm_changed()
 
-const MODEL := preload("res://assets/models/destroyer.glb")
-const HIT_RADIUS := 4.0
-const HULL_RADIUS := 2.4
-const HALF_LENGTH := 12.0
+const MODEL := preload("res://assets/models/battlecruiser.glb")
+const HIT_RADIUS := 6.0
+const HULL_RADIUS := 3.6
+const HALF_LENGTH := 20.0
 
 var motion := ShipMotion.new(Tuning.MAX_SPEED, Tuning.MAX_REVERSE, Tuning.ACCEL, Tuning.TURN_RATE)
+var control := ShipControl.new()
 var turret := TurretAim.new()
 var railgun := RailgunState.new()
 var health := Health.new(Tuning.PLAYER_HULL)
 var aim_point: Vector3 = Vector3(0, 0, -100)
 var input_enabled: bool = true
 var use_device_input: bool = true
-var throttle_input: float = 0.0
-var rudder_input: float = 0.0
 var blockers: Array = []
 var recoil: float = 0.0
 var _sink: float = 0.0
@@ -55,10 +55,10 @@ func _ready() -> void:
 	model.get_node("FlakPivot/FlakGun").reparent(flak, false)
 	var deck_light := OmniLight3D.new()
 	deck_light.light_color = Color("#bfe9ff")
-	deck_light.light_energy = 1.6
-	deck_light.omni_range = 28.0
+	deck_light.light_energy = 2.2
+	deck_light.omni_range = 42.0
 	deck_light.light_volumetric_fog_energy = 0.0
-	deck_light.position = Vector3(0, 12, 0)
+	deck_light.position = Vector3(0, 18, 0)
 	add_child(deck_light)
 	fx = RailgunFx.new()
 	fx.name = "RailgunFx"
@@ -73,10 +73,25 @@ func _notification(what: int) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not use_device_input:
 		return
-	if event.is_action_pressed(&"fire"):
+	if event.is_action_pressed(&"move_forward"):
+		_helm(control.throttle_up)
+	elif event.is_action_pressed(&"move_back"):
+		_helm(control.throttle_down)
+	elif event.is_action_pressed(&"rudder_left"):
+		_helm(control.rudder_left)
+	elif event.is_action_pressed(&"rudder_right"):
+		_helm(control.rudder_right)
+	elif event.is_action_pressed(&"fire"):
 		_handle_fire_input(true)
 	elif event.is_action_released(&"fire"):
 		_handle_fire_input(false)
+
+
+func _helm(change: Callable) -> void:
+	if not input_enabled or health.is_dead():
+		return
+	change.call()
+	helm_changed.emit()
 
 
 func _handle_fire_input(pressed: bool) -> void:
@@ -111,14 +126,10 @@ func _poll_fire() -> void:
 
 
 func _process(delta: float) -> void:
-	if use_device_input:
-		var active := input_enabled and not health.is_dead()
-		throttle_input = Input.get_axis(&"move_back", &"move_forward") if active else 0.0
-		rudder_input = Input.get_axis(&"rudder_right", &"rudder_left") if active else 0.0
 	if health.is_dead():
-		throttle_input = 0.0
-		rudder_input = 0.0
-	motion.step(throttle_input, rudder_input, delta)
+		control.telegraph = 0
+	control.tick(delta)
+	motion.step_to(control.target_speed(Tuning.MAX_SPEED, Tuning.MAX_REVERSE), control.rudder, delta)
 	motion.resolve_blockers(blockers, HULL_RADIUS, HALF_LENGTH)
 	var piv := turret_pivot.global_position
 	var to_aim := Vector2(aim_point.x - piv.x, aim_point.z - piv.z)
@@ -137,21 +148,21 @@ func _process(delta: float) -> void:
 
 
 func _apply_transform() -> void:
-	var back := -ShipMotion.forward_of(motion.heading) * recoil * 0.7
+	var back := -ShipMotion.forward_of(motion.heading) * recoil * 1.2
 	var x := motion.position.x + back.x
 	var z := motion.position.y + back.y
 	var t := _ocean.time if _ocean else 0.0
 	var amp := _ocean.wave_amp if _ocean else 0.0
 	var f := ShipMotion.forward_of(motion.heading)
 	var side := Vector2(-f.y, f.x)
-	var h_bow := Ocean.wave_height(x + f.x * 9.0, z + f.y * 9.0, t, amp)
-	var h_stern := Ocean.wave_height(x - f.x * 9.0, z - f.y * 9.0, t, amp)
-	var h_port := Ocean.wave_height(x + side.x * 2.5, z + side.y * 2.5, t, amp)
-	var h_star := Ocean.wave_height(x - side.x * 2.5, z - side.y * 2.5, t, amp)
+	var h_bow := Ocean.wave_height(x + f.x * 18.0, z + f.y * 18.0, t, amp)
+	var h_stern := Ocean.wave_height(x - f.x * 18.0, z - f.y * 18.0, t, amp)
+	var h_port := Ocean.wave_height(x + side.x * 3.5, z + side.y * 3.5, t, amp)
+	var h_star := Ocean.wave_height(x - side.x * 3.5, z - side.y * 3.5, t, amp)
 	position = Vector3(x, (h_bow + h_stern + h_port + h_star) * 0.25 * 0.6 - _sink, z)
-	rotation = Vector3(atan2(h_bow - h_stern, 18.0) * 0.6 + recoil * 0.035 + _sink * 0.05, motion.heading, atan2(h_port - h_star, 5.0) * -0.5 + _sink * 0.04)
+	rotation = Vector3(atan2(h_bow - h_stern, 36.0) * 0.6 + recoil * 0.02 + _sink * 0.05, motion.heading, atan2(h_port - h_star, 7.0) * -0.5 + _sink * 0.04)
 	turret_pivot.rotation.y = turret.angle
-	railgun_mesh.position = _railgun_rest + Vector3(0, 0, recoil * 0.9)
+	railgun_mesh.position = _railgun_rest + Vector3(0, 0, recoil * 1.6)
 
 
 func apply_damage(amount: float) -> void:

@@ -28,7 +28,7 @@ func run(c: Node) -> void:
 	b.camera.mouse_aim = false
 	var vp := c.get_viewport()
 	Input.warp_mouse(vp.get_visible_rect().size * Vector2(0.62, 0.42))
-	p.throttle_input = 0.7
+	p.control.telegraph = 3
 	await c.wait(6.5)
 	await c.shot("b_wave1")
 	for i in 4:
@@ -48,7 +48,7 @@ func run(c: Node) -> void:
 		await c.wait(0.2)
 		if i == 2:
 			await c.shot("b_overcharged_shot")
-		p.rudder_input = 0.4 if i % 2 == 0 else -0.3
+		p.control.rudder_setting = 1 if i % 2 == 0 else -1
 		await c.wait(1.4)
 	await c.shot("b_combat")
 	p.apply_damage(10000.0)

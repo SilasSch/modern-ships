@@ -10,7 +10,7 @@ func run(c: Node) -> void:
 	var ship: PlayerShip = (load("res://ships/player_ship.tscn") as PackedScene).instantiate()
 	ship.use_device_input = false
 	root.add_child(ship)
-	ship.throttle_input = 0.4
+	ship.control.telegraph = 2
 	var cam := FollowCamera.new()
 	cam.target = ship
 	cam.mouse_aim = false
