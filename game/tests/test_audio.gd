@@ -22,3 +22,11 @@ func test_loops_are_looping() -> void:
 	for n: String in LOOPS:
 		var s := load("res://assets/audio/%s.wav" % n) as AudioStreamWAV
 		assert_eq(s.loop_mode, AudioStreamWAV.LOOP_FORWARD, n)
+
+
+func test_new_sounds_present() -> void:
+	for n: String in ["reload_done", "telegraph", "projectile_whoosh"]:
+		var s := load("res://assets/audio/%s.wav" % n) as AudioStreamWAV
+		assert_not_null(s, n)
+	var fire := load("res://assets/audio/fire.wav") as AudioStreamWAV
+	assert_gte(fire.get_length(), 2.8, "heavier, longer railgun report")

@@ -84,6 +84,8 @@ func _ready() -> void:
 	_sparks.visibility_aabb = AABB(Vector3(-20, -10, -20), Vector3(40, 30, 40))
 	add_child(_sparks)
 	_place(Vector3(origin.x, _height, origin.z))
+	if has_node(^"/root/Sfx"):
+		Sfx.play(&"projectile_whoosh", origin, 0.0)
 
 
 func _cylinder(power: float, tail_fade: float) -> MeshInstance3D:

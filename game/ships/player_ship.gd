@@ -92,6 +92,8 @@ func _helm(change: Callable) -> void:
 		return
 	change.call()
 	helm_changed.emit()
+	if has_node(^"/root/Sfx"):
+		Sfx.play(&"telegraph", Vector3.INF, -6.0)
 
 
 func _handle_fire_input(pressed: bool) -> void:

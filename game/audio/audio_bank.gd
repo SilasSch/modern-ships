@@ -3,7 +3,7 @@ extends Node
 
 const NAMES: Array[StringName] = [&"charge", &"overcharge_loop", &"fire", &"misfire", &"recharge", &"impact",
 	&"explosion", &"flak", &"enemy_gun", &"shell_whistle", &"torpedo", &"splash", &"thunder_0", &"thunder_1",
-	&"thunder_2", &"rain_loop", &"ui_click"]
+	&"thunder_2", &"rain_loop", &"ui_click", &"reload_done", &"telegraph", &"projectile_whoosh"]
 const POOL_3D := 24
 const POOL_2D := 8
 const AMBIENCE: Array[StringName] = [&"rain_loop", &"thunder_0", &"thunder_1", &"thunder_2"]
