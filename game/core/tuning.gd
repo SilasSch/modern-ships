@@ -3,10 +3,13 @@ extends RefCounted
 ## All gameplay numbers live here. Values are starting points for tuning.
 
 # --- Railgun ---
-const CHARGE_TIME: float = 1.2
-const OVERCHARGE_TIME: float = 1.3
-const COOLDOWN: float = 1.0
-const BASE_DAMAGE: float = 100.0
+const RELOAD_TIME: float = 7.0
+const CLICK_GRACE: float = 0.25
+const OVERCHARGE_TIME: float = 2.0
+const BASE_DAMAGE: float = 250.0
+const PROJECTILE_SPEED: float = 600.0
+const PROJECTILE_RANGE: float = 900.0
+const PIERCE_FACTOR: float = 0.6
 const BEAM_RANGE: float = 260.0
 const BEAM_HALF_WIDTH: float = 1.2
 const BEAM_HALF_WIDTH_OVER: float = 1.2
@@ -20,7 +23,7 @@ const HEAT_AFTER_MISFIRE: float = 0.6
 const HITSTOP: float = 0.08
 
 # --- Player ship ---
-const PLAYER_HULL: float = 300.0
+const PLAYER_HULL: float = 1500.0
 const MAX_SPEED: float = 12.0
 const MAX_REVERSE: float = 4.5
 const ACCEL: float = 0.5
@@ -45,7 +48,7 @@ const SPEEDBOAT_SPEED: float = 22.0
 const SPEEDBOAT_GUN_DMG: float = 4.0
 const SPEEDBOAT_GUN_INTERVAL: float = 0.5
 const SPEEDBOAT_RANGE: float = 45.0
-const FRIGATE_HP: float = 180.0
+const FRIGATE_HP: float = 400.0
 const FRIGATE_SPEED: float = 7.0
 const FRIGATE_SALVO: int = 3
 const FRIGATE_SHELL_DMG: float = 20.0

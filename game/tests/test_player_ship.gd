@@ -9,20 +9,20 @@ func before_each() -> void:
 	ship = PlayerShipScene.instantiate()
 	add_child_autofree(ship)
 	ship.aim_point = Vector3(0, 0, -100)
+	ship.railgun.tick(Tuning.RELOAD_TIME + 0.01)
 
 
 func test_focus_out_cancels_charge() -> void:
 	ship._handle_fire_input(true)
-	assert_eq(ship.railgun.state, RailgunState.State.CHARGING)
+	assert_eq(ship.railgun.state, RailgunState.State.HOLDING)
 	ship._notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
 	assert_eq(ship.railgun.state, RailgunState.State.READY)
 
 
 func test_dead_ship_ignores_fire() -> void:
 	watch_signals(ship)
-	ship.health.damage(1000.0)
+	ship.health.damage(100000.0)
 	ship._handle_fire_input(true)
-	ship.railgun.tick(1.3)
 	ship._handle_fire_input(false)
 	assert_signal_not_emitted(ship, "fired")
 	assert_eq(ship.railgun.state, RailgunState.State.READY)
@@ -37,7 +37,7 @@ func test_charge_started_signal() -> void:
 func test_fire_emits_signal_with_muzzle_origin() -> void:
 	watch_signals(ship)
 	ship._handle_fire_input(true)
-	ship.railgun.tick(1.2)
+	ship.railgun.tick(0.1)
 	var expected_origin := ship.muzzle_transform().origin
 	ship._handle_fire_input(false)
 	assert_signal_emitted(ship, "fired")
@@ -61,7 +61,7 @@ func test_misfire_damages_self() -> void:
 
 func test_apply_damage_emits_died_once() -> void:
 	watch_signals(ship)
-	ship.apply_damage(1000.0)
+	ship.apply_damage(100000.0)
 	ship.apply_damage(10.0)
 	assert_signal_emit_count(ship, "died", 1)
 	assert_false(ship.can_be_hit())

@@ -15,7 +15,7 @@ func test_all_sounds_present_and_long_enough() -> void:
 
 func test_charge_matches_charge_time() -> void:
 	var s := load("res://assets/audio/charge.wav") as AudioStreamWAV
-	assert_almost_eq(s.get_length(), Tuning.CHARGE_TIME, 0.05)
+	assert_almost_eq(s.get_length(), 1.2, 0.05)
 
 
 func test_loops_are_looping() -> void:

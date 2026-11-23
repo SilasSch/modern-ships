@@ -256,11 +256,11 @@ func _line_burst(amount: int, lifetime: float, color: Color, size: float, speed:
 
 func _process(delta: float) -> void:
 	var gun := ship.railgun
-	var c := gun.charge
+	var c := 1.0 if gun.state == RailgunState.State.HOLDING else gun.reload * 0.35
 	var o := gun.overcharge
 	var c2 := c * c
-	var charging := gun.state == RailgunState.State.CHARGING
-	if gun.state == RailgunState.State.READY and _prev_state == RailgunState.State.COOLDOWN:
+	var charging := gun.state == RailgunState.State.HOLDING
+	if gun.state == RailgunState.State.READY and _prev_state == RailgunState.State.LOADING:
 		_sfx(&"recharge", ship.global_position, -8.0)
 	_prev_state = gun.state
 	if has_node(^"/root/Sfx"):

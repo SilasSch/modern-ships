@@ -27,11 +27,11 @@ func test_beam_goes_through_the_cursor() -> void:
 	ship.use_device_input = false
 	var pivot := ship.turret_pivot.global_position
 	ship.aim_point = Vector3(pivot.x + 30.0, 0.0, pivot.z)
-	for i in 120:
+	for i in 600:
 		ship._process(1.0 / 30.0)
 	watch_signals(ship)
 	ship._handle_fire_input(true)
-	ship.railgun.tick(1.2)
+	ship.railgun.tick(0.1)
 	ship._handle_fire_input(false)
 	var dir: Vector3 = get_signal_parameters(ship, "fired")[2]
 	assert_almost_eq(dir.z, 0.0, 0.02, "beam must pass through the aim point")
@@ -118,16 +118,14 @@ func test_small_hit_does_not_use_explosion_pool() -> void:
 # 6 -------------------------------------------------------------- holding fire through cooldown starts charging
 func test_held_fire_starts_charge_after_cooldown() -> void:
 	var ship := _ship()
-	ship._handle_fire_input(true)
-	ship.railgun.tick(1.2)
-	ship._handle_fire_input(false)
-	assert_eq(ship.railgun.state, RailgunState.State.COOLDOWN)
+	assert_eq(ship.railgun.state, RailgunState.State.LOADING)
 	Input.action_press(&"fire")
-	ship._process(1.1)
-	assert_eq(ship.railgun.state, RailgunState.State.CHARGING)
+	ship._process(Tuning.RELOAD_TIME + 0.1)
+	assert_eq(ship.railgun.state, RailgunState.State.HOLDING, "holding through the reload starts the hold")
 	Input.action_release(&"fire")
-	ship._process(0.1)
-	assert_eq(ship.railgun.state, RailgunState.State.READY, "missed release events are recovered")
+	watch_signals(ship)
+	ship._process(0.05)
+	assert_signal_emitted(ship, "fired", "a missed release event still fires")
 
 
 # 7 -------------------------------------------------------------- medium quality cuts particles

@@ -28,8 +28,11 @@ func _draw() -> void:
 	draw_line(c + Vector2(0, 3), c + Vector2(0, 7), UiTheme.TEXT, 2.0)
 	var start := -PI / 2.0
 	draw_arc(c, 22.0, 0.0, TAU, 48, Color(1, 1, 1, 0.15), 3.0, true)
-	if railgun.charge > 0.0:
-		draw_arc(c, 22.0, start, start + TAU * railgun.charge, 48, UiTheme.CYAN, 4.0, true)
+	var ready := railgun.state == RailgunState.State.READY or railgun.state == RailgunState.State.HOLDING
+	if ready:
+		draw_arc(c, 22.0, 0.0, TAU, 48, UiTheme.CYAN, 4.0, true)
+	elif railgun.reload > 0.0:
+		draw_arc(c, 22.0, start, start + TAU * railgun.reload, 48, Color(UiTheme.TEXT, 0.55), 3.0, true)
 	if railgun.overcharge > 0.0:
 		var oc := Color.WHITE.lerp(UiTheme.CYAN, 0.3 + 0.3 * sin(_blink * 30.0))
 		draw_arc(c, 30.0, start, start + TAU * railgun.overcharge, 48, oc, 5.0, true)
@@ -39,8 +42,6 @@ func _draw() -> void:
 		if heat > 0.8 and fmod(_blink, 0.3) < 0.15:
 			hc.a = 0.35
 		draw_arc(c, 38.0, start, start + TAU * heat, 64, hc, 2.0, true)
-	if railgun.state == RailgunState.State.COOLDOWN:
-		draw_arc(c, 22.0, 0.0, TAU, 48, Color(UiTheme.CYAN, 0.25), 1.5, true)
 	if locked:
 		var f := UiTheme.mono
 		draw_string(f, c + Vector2(-34, 56), "GESPERRT", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, UiTheme.RED)

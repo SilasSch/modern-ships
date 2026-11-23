@@ -49,6 +49,7 @@ func test_input_disabled_after_end() -> void:
 
 
 func test_pause_cancels_charge() -> void:
+	battle.player.railgun.tick(Tuning.RELOAD_TIME + 0.01)
 	battle.player._handle_fire_input(true)
 	battle.set_paused(true)
 	assert_eq(battle.player.railgun.state, RailgunState.State.READY)

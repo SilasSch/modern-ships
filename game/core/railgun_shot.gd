@@ -5,3 +5,4 @@ extends RefCounted
 var damage: float = 0.0
 var overcharge: float = 0.0
 var half_width: float = 0.0
+var pierce: int = 2

@@ -86,7 +86,7 @@ func _handle_fire_input(pressed: bool) -> void:
 	if pressed:
 		var was_ready := railgun.state == RailgunState.State.READY
 		railgun.press()
-		if was_ready and railgun.state == RailgunState.State.CHARGING:
+		if was_ready and railgun.state == RailgunState.State.HOLDING:
 			charge_started.emit()
 		return
 	var shot := railgun.release()
@@ -106,7 +106,7 @@ func _poll_fire() -> void:
 	var held := Input.is_action_pressed(&"fire")
 	if held and railgun.state == RailgunState.State.READY:
 		_handle_fire_input(true)
-	elif not held and railgun.state == RailgunState.State.CHARGING:
+	elif not held and railgun.state == RailgunState.State.HOLDING:
 		_handle_fire_input(false)
 
 
