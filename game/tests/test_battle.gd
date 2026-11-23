@@ -106,3 +106,22 @@ func test_round_stopped_by_island() -> void:
 	for i: int in 45:
 		battle._process(1.0 / 30.0)
 	assert_eq(f.health.hp, Tuning.FRIGATE_HP)
+
+
+func test_islands_inside_map_and_clear_of_start() -> void:
+	var layout: Array = Battle.island_layout()
+	assert_eq(layout.size(), 12)
+	for isl: Dictionary in layout:
+		var p: Vector2 = isl["pos"]
+		var r: float = isl["radius"]
+		assert_lte(absf(p.x) + r, Tuning.MAP_HALF - 50.0 + 0.01)
+		assert_lte(absf(p.y) + r, Tuning.MAP_HALF - 50.0 + 0.01)
+		assert_gte(p.length() - r, 120.0)
+		assert_between(r, 18.0, 45.0)
+
+
+func test_enemies_spawn_at_engagement_range() -> void:
+	battle._process(Tuning.WAVE_DELAY + 0.1)
+	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
+		var d := (n as Node3D).global_position.distance_to(battle.player.global_position)
+		assert_between(d, 400.0, 620.0)

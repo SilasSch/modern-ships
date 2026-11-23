@@ -3,13 +3,6 @@ extends Node3D
 ## One sea battle: storm world, islands, the player destroyer, enemy waves, railgun resolution,
 ## HUD, pause and end screens.
 
-const ISLANDS := [
-	["a", Vector2(72, -62), 18.0],
-	["b", Vector2(-92, -38), 12.0],
-	["c", Vector2(42, 96), 8.0],
-	["b", Vector2(-64, 84), 12.0],
-	["c", Vector2(132, 24), 8.0],
-]
 const END_DELAY := 2.2
 
 var waves: Array = WaveDirector.DEFAULT_WAVES
@@ -40,13 +33,14 @@ func _ready() -> void:
 	add_child(ocean)
 	explosions = ExplosionFx.new()
 	add_child(explosions)
-	for isl: Array in ISLANDS:
-		var node: Node3D = (load("res://assets/models/island_%s.glb" % isl[0]) as PackedScene).instantiate()
-		var pos: Vector2 = isl[1]
+	for isl: Dictionary in island_layout():
+		var node: Node3D = (load("res://assets/models/%s.glb" % isl["model"]) as PackedScene).instantiate()
+		var pos: Vector2 = isl["pos"]
 		node.position = Vector3(pos.x, -0.3, pos.y)
 		node.rotation.y = _rng.randf_range(0.0, TAU)
+		node.scale = Vector3.ONE * float(isl["scale"])
 		add_child(node)
-		blockers.append({"center": pos, "radius": float(isl[2]) * 1.0})
+		blockers.append({"center": pos, "radius": float(isl["radius"])})
 	player = (load("res://ships/player_ship.tscn") as PackedScene).instantiate()
 	player.blockers = blockers
 	add_child(player)
@@ -70,6 +64,32 @@ func _ready() -> void:
 	_end_menu = OverlayMenu.new()
 	add_child(_end_menu)
 	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+
+
+## Deterministic island layout over the 1.2 km map: 12 islands, 18–45 m, clear of the start.
+static func island_layout() -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1207
+	var out: Array = []
+	var bases := {"island_a": 18.0, "island_b": 12.0, "island_c": 8.0}
+	var tries := 0
+	while out.size() < 12 and tries < 2000:
+		tries += 1
+		var r := rng.randf_range(18.0, 45.0)
+		var lim := Tuning.MAP_HALF - 50.0 - r
+		var p := Vector2(rng.randf_range(-lim, lim), rng.randf_range(-lim, lim))
+		if p.length() - r < 120.0:
+			continue
+		var ok := true
+		for o: Dictionary in out:
+			if p.distance_to(o["pos"]) < r + float(o["radius"]) + 60.0:
+				ok = false
+				break
+		if not ok:
+			continue
+		var model: String = ["island_a", "island_b", "island_c"][out.size() % 3]
+		out.append({"model": model, "pos": p, "radius": r, "scale": r / float(bases[model])})
+	return out
 
 
 func outcome() -> StringName:
@@ -123,11 +143,11 @@ func _spawn(kind: StringName) -> void:
 	var pos := center
 	for attempt in 12:
 		var ang := atan2(away.y, away.x) + _rng.randf_range(-1.1, 1.1)
-		pos = center + Vector2(cos(ang), sin(ang)) * _rng.randf_range(140.0, 170.0)
-		pos = pos.clamp(Vector2.ONE * -(Tuning.MAP_HALF - 10.0), Vector2.ONE * (Tuning.MAP_HALF - 10.0))
+		pos = center + Vector2(cos(ang), sin(ang)) * _rng.randf_range(460.0, 580.0)
+		pos = pos.clamp(Vector2.ONE * -(Tuning.MAP_HALF - 20.0), Vector2.ONE * (Tuning.MAP_HALF - 20.0))
 		var free := true
 		for b: Dictionary in blockers:
-			if pos.distance_to(b["center"]) < float(b["radius"]) + 12.0:
+			if pos.distance_to(b["center"]) < float(b["radius"]) + 25.0:
 				free = false
 		if free:
 			break
