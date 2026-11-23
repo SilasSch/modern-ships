@@ -61,3 +61,25 @@ func test_submarine_contract() -> void:
 func test_islands_load() -> void:
 	for n: String in ["island_a", "island_b", "island_c"]:
 		assert_not_null(_load(n))
+
+
+func test_battlecruiser_contract() -> void:
+	var r := _load("battlecruiser")
+	if r == null:
+		return
+	assert_not_null(r.get_node_or_null("TurretPivot/Railgun/Muzzle"))
+	assert_not_null(r.find_child("FlakPivot"))
+	assert_not_null(r.find_child("Bridge"))
+	assert_almost_eq(_length_z(r), 40.0 + 4.0, 6.0, "40 m hull plus railgun overhang")
+	assert_lt((r.get_node("TurretPivot") as Node3D).position.z, -8.0, "railgun turret on the foredeck")
+
+
+func test_enemy_destroyer_contract() -> void:
+	_enemy_contract("enemy_destroyer", 22.0, "Torp_L")
+	var r := _load("enemy_destroyer")
+	for n: String in ["Gun_0", "Gun_1", "Torp_R"]:
+		assert_not_null(r.find_child(n), n)
+
+
+func test_cruiser_contract() -> void:
+	_enemy_contract("cruiser", 34.0, "Gun_3")
