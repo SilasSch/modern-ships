@@ -12,6 +12,8 @@ var _hint: Label
 var _cursor: CursorRing
 var _edge_warn: Label
 var helm: HelmGauge
+## Warn early: a full-speed turning circle is ~300 m across.
+const EDGE_WARN_DIST := 160.0
 var _hint_t: float = 9.0
 var _t: float = 0.0
 
@@ -99,6 +101,7 @@ func _process(delta: float) -> void:
 		return
 	var p := battle.player
 	_cursor.railgun = p.railgun
+	_cursor.ship = p
 	_cursor.visible = battle.outcome() == &"running" and not battle.get_tree().paused
 	var frac := p.health.fraction()
 	_hull_fill.size.x = 340.0 * frac
@@ -115,6 +118,6 @@ func _process(delta: float) -> void:
 		_wave_label.text = "WELLE %d / %d  ·  %d %s" % [d.current_wave, d.total_waves(), d.alive, "FEIND" if d.alive == 1 else "FEINDE"]
 	_warn.visible = p.railgun.state == RailgunState.State.LOCKED and fmod(_t, 0.5) < 0.32
 	var edge := Tuning.MAP_HALF - maxf(absf(p.motion.position.x), absf(p.motion.position.y))
-	_edge_warn.visible = edge < 25.0 and fmod(_t, 0.8) < 0.55
+	_edge_warn.visible = edge < EDGE_WARN_DIST and fmod(_t, 0.8) < 0.55
 	_hint_t -= delta
 	_hint.modulate.a = clampf(_hint_t, 0.0, 1.0)

@@ -3,6 +3,7 @@ extends Control
 ## Aim cursor: inner arc = charge (cyan), outer arc = overcharge (white -> cyan), thin outer ring = heat.
 
 var railgun: RailgunState
+var ship: PlayerShip
 var _blink: float = 0.0
 
 
@@ -42,6 +43,9 @@ func _draw() -> void:
 		if heat > 0.8 and fmod(_blink, 0.3) < 0.15:
 			hc.a = 0.35
 		draw_arc(c, 38.0, start, start + TAU * heat, 64, hc, 2.0, true)
+	if ship and ship.aim_error() > 0.035 and not locked:
+		draw_arc(c, 22.0, 0.0, TAU, 48, Color(0.05, 0.08, 0.12, 0.65), 5.0, true)
+		draw_string(UiTheme.mono, c + Vector2(-34, 56), "SCHWENKT", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, UiTheme.AMBER)
 	if locked:
 		var f := UiTheme.mono
 		draw_string(f, c + Vector2(-34, 56), "GESPERRT", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, UiTheme.RED)

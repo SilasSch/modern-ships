@@ -20,6 +20,7 @@ func _draw() -> void:
 	var cam := battle.camera
 	var rect := get_viewport_rect().size
 	var center := rect * 0.5
+	_draw_gun_bearing(cam)
 	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
 		var e := n as Enemy
 		if e == null or not e.can_be_hit():
@@ -59,3 +60,24 @@ func _draw_lead(cam: Camera3D, e: Enemy, enemy_screen: Vector2) -> void:
 	if p.distance_to(enemy_screen) > 4.0:
 		draw_line(enemy_screen, p, Color(UiTheme.RED, 0.35), 1.0)
 	draw_polyline(PackedVector2Array([p + Vector2(0, -8), p + Vector2(8, 0), p + Vector2(0, 8), p + Vector2(-8, 0), p + Vector2(0, -8)]), col, 2.0)
+
+
+## Thin line along the railgun's actual bearing (where a round fired now would go).
+func _draw_gun_bearing(cam: Camera3D) -> void:
+	var p := battle.player
+	if p == null or p.health.is_dead():
+		return
+	var m := p.muzzle_transform().origin
+	var f := ShipMotion.forward_of(p.turret.world_yaw(p.motion.heading))
+	var a := Vector3(m.x, m.y, m.z)
+	var b := a + Vector3(f.x, 0.0, f.y) * 260.0
+	if cam.is_position_behind(a) or cam.is_position_behind(b):
+		return
+	var aligned := p.aim_error() <= 0.035
+	var col := Color(UiTheme.CYAN, 0.55) if aligned else Color(UiTheme.AMBER, 0.5)
+	var sa := cam.unproject_position(a)
+	var sb := cam.unproject_position(b)
+	var n := 14
+	for i in n:
+		if i % 2 == 0:
+			draw_line(sa.lerp(sb, float(i) / n), sa.lerp(sb, float(i + 1) / n), col, 1.5)

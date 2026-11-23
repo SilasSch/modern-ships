@@ -49,10 +49,11 @@ func _init() -> void:
 	var fmat := ShaderMaterial.new()
 	fmat.shader = SHADER
 	fmat.set_shader_parameter("far_lod", true)
-	fmat.set_shader_parameter("cut_inner", SIZE * 0.5 - 6.0)
+	fmat.set_shader_parameter("cut_inner", SIZE * 0.5 - 20.0)
 	far.material_override = fmat
 	far.custom_aabb = AABB(Vector3(-FAR_SIZE / 2.0, -6.0, -FAR_SIZE / 2.0), Vector3(FAR_SIZE, 12.0, FAR_SIZE))
 	far.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	far.position.y = -0.25  # sits under the near plane in the overlap band: no seam line
 	add_child(far)
 
 

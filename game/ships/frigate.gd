@@ -20,7 +20,7 @@ func _init() -> void:
 
 ## Overridden by Destroyer / Cruiser to pick model, health and engagement envelope.
 func _setup_kind() -> void:
-	configure(MODEL, Tuning.FRIGATE_HP, Tuning.FRIGATE_SPEED, 2.0, 0.35, 5.0)
+	configure(MODEL, Tuning.FRIGATE_HP, Tuning.FRIGATE_SPEED, 2.0, 0.35, 2.6)
 	explosion_strength = 1.3
 	collision_radius = 1.7
 	half_length = 8.0

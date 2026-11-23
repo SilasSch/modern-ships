@@ -50,7 +50,7 @@ func _ready() -> void:
 	camera.target = player
 	add_child(camera)
 	camera.make_current()
-	ocean.follow = camera
+	ocean.follow = player
 	var weather := Weather.new()
 	weather.storm = storm
 	weather.follow = camera

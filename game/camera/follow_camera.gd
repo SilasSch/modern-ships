@@ -5,10 +5,12 @@ extends Camera3D
 
 @export var target: PlayerShip
 ## Zoom levels: [distance, pitch]. Far levels look flatter so more sea ahead is visible.
-const ZOOM_LEVELS: Array[Vector2] = [Vector2(140, 60), Vector2(210, 54), Vector2(300, 48), Vector2(420, 44)]
-@export var zoom_index: int = 1
-var pitch_deg: float = 54.0
-var distance: float = 210.0
+const ZOOM_LEVELS: Array[Vector2] = [Vector2(260, 62), Vector2(400, 62), Vector2(560, 60), Vector2(720, 58)]
+## Share of the camera distance the view shifts toward the cursor (look toward the enemy).
+const LOOK_SHIFT := 0.35
+@export var zoom_index: int = 2
+var pitch_deg: float = 60.0
+var distance: float = 560.0
 @export var mouse_aim: bool = true
 
 var base_fov: float = 46.0
@@ -64,7 +66,7 @@ func _process(delta: float) -> void:
 	var level := ZOOM_LEVELS[zoom_index]
 	distance = lerpf(distance, level.x, 1.0 - exp(-2.5 * delta))
 	pitch_deg = lerpf(pitch_deg, level.y, 1.0 - exp(-2.5 * delta))
-	var lead_vec := to_aim.limit_length(distance * 0.15)
+	var lead_vec := to_aim.limit_length(distance * LOOK_SHIFT)
 	var desired := Vector3(ship_pos.x, 0.0, ship_pos.z) + lead_vec * (1.0 - _charge_zoom * 0.4)
 	_focus = _focus.lerp(desired, 1.0 - exp(-1.8 * delta))
 	var pitch := deg_to_rad(pitch_deg)

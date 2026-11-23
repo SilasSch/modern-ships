@@ -3,7 +3,7 @@ extends Control
 ## Bottom-centre helm display: engine telegraph (6 steps) with actual speed marker,
 ## rudder (5 steps) with the actual blade position, and speed in knots.
 
-const T_LABELS: Array[String] = ["Z.VOLL", "STOPP", "¼", "½", "¾", "VOLL"]
+const T_LABELS: Array[String] = ["Z.VOLL", "STOPP", "1/4", "1/2", "3/4", "VOLL"]
 const R_LABELS: Array[String] = ["HART BB", "HALB BB", "MITTE", "HALB STB", "HART STB"]
 const CELL := Vector2(84, 30)
 const GAP := 4.0

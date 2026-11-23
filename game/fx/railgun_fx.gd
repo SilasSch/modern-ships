@@ -35,6 +35,7 @@ var _t: float = 99.0
 var _over: float = 0.0
 var _afterglow: float = 0.0
 var _prev_state: int = RailgunState.State.LOADING
+var _prev_over: float = 0.0
 
 
 func _ready() -> void:
@@ -44,7 +45,6 @@ func _ready() -> void:
 	_setup_materials()
 	_setup_hold()
 	_setup_muzzle()
-	ship.charge_started.connect(func() -> void: _sfx(&"charge", ship.muzzle.global_position, 0.0))
 	ship.fired.connect(func(shot: RailgunShot, origin: Vector3, _dir: Vector3) -> void:
 		_sfx(&"fire", origin, 3.0, 1.0 - 0.12 * shot.overcharge))
 	ship.misfired.connect(func() -> void: _sfx(&"misfire", ship.global_position, 0.0))
@@ -210,6 +210,9 @@ func _process(delta: float) -> void:
 	if gun.state == RailgunState.State.READY and _prev_state == RailgunState.State.LOADING:
 		_sfx(&"reload_done", ship.global_position, -4.0)
 	_prev_state = gun.state
+	if holding and o > 0.0 and _prev_over <= 0.0:
+		_sfx(&"charge", ship.muzzle.global_position, -2.0)
+	_prev_over = o
 	if has_node(^"/root/Sfx"):
 		Sfx.loop(&"overcharge_loop", holding and o > 0.0, linear_to_db(clampf(0.3 + o, 0.0, 1.0)) - 4.0)
 

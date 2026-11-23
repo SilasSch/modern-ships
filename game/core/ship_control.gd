@@ -3,7 +3,7 @@ extends RefCounted
 ## World-of-Warships style helm: engine telegraph in 6 steps and rudder in 5 steps.
 ## Both stay where they are set; the rudder blade swings over slowly.
 
-const LABELS: Array[String] = ["ZURÜCK VOLL", "STOPP", "¼", "½", "¾", "VOLL"]
+const LABELS: Array[String] = ["ZURÜCK VOLL", "STOPP", "1/4", "1/2", "3/4", "VOLL"]
 
 var telegraph: int = 0        # -1 = back full, 0 = stop, 1..4 = 1/4 .. full
 var rudder_setting: int = 0   # -2..2, positive = port (left)

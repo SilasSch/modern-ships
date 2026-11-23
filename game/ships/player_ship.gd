@@ -185,6 +185,24 @@ func get_hit_center() -> Vector2:
 	return motion.position
 
 
+## Distance from a point to the hull outline (negative = inside). Used by shells and torpedoes.
+func hull_distance(p: Vector2) -> float:
+	var f := ShipMotion.forward_of(motion.heading) * (HALF_LENGTH - HULL_RADIUS)
+	var a := motion.position - f
+	var ab := f * 2.0
+	var t := clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+	return p.distance_to(a + ab * t) - HULL_RADIUS
+
+
+## Angle (rad) between where the railgun points and where the cursor is. 0 = on target.
+func aim_error() -> float:
+	var piv := turret_pivot.global_position
+	var to_aim := Vector2(aim_point.x - piv.x, aim_point.z - piv.z)
+	if to_aim.length() < 3.0:
+		return 0.0
+	return absf(wrapf(ShipMotion.yaw_of(to_aim) - turret.world_yaw(motion.heading), -PI, PI))
+
+
 func get_hit_radius() -> float:
 	return HIT_RADIUS
 

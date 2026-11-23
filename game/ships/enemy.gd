@@ -84,6 +84,12 @@ func get_hit_center() -> Vector2:
 	return Vector2(global_position.x, global_position.z)
 
 
+## Hull as a segment along the heading (bow to stern) for railgun hits.
+func get_hit_segment() -> PackedVector2Array:
+	var f := ShipMotion.forward_of(motion.heading) * maxf(half_length - hit_radius, 0.0)
+	return PackedVector2Array([motion.position - f, motion.position + f])
+
+
 func get_hit_radius() -> float:
 	return hit_radius
 
@@ -208,12 +214,45 @@ func _process_dying(delta: float) -> void:
 		queue_free()
 
 
+## Detour around the first island between the ship and goal (tangent waypoint), else goal.
+func route_point(goal: Vector2) -> Vector2:
+	var pos := motion.position
+	var hit: Dictionary = {}
+	var best := INF
+	for b: Dictionary in blockers:
+		if Blockers.segment_blocked(pos, goal, [{"center": b["center"], "radius": float(b["radius"]) + half_length}]):
+			var d := pos.distance_to(b["center"])
+			if d < best:
+				best = d
+				hit = b
+	if hit.is_empty():
+		return goal
+	var c: Vector2 = hit["center"]
+	var r := float(hit["radius"]) + half_length + 30.0
+	var side := (c - pos).normalized().orthogonal()
+	var w1 := c + side * r
+	var w2 := c - side * r
+	return w1 if w1.distance_to(goal) <= w2.distance_to(goal) else w2
+
+
 ## Shared steering: turn toward a world point; returns the remaining heading error (rad).
 func steer_to(point: Vector2, gain: float = 2.0) -> float:
+	point = route_point(point)
 	var to := point - motion.position
 	var err := wrapf(ShipMotion.yaw_of(to) - motion.heading, -PI, PI)
 	rudder = clampf(err * gain, -1.0, 1.0)
 	return err
+
+
+## Where to aim a straight weapon of the given speed at the target (lead), or the target itself.
+func lead_point(speed: float) -> Vector3:
+	if target is PlayerShip:
+		var ps := target as PlayerShip
+		var v := ShipMotion.forward_of(ps.motion.heading) * ps.motion.speed
+		var hit: Variant = Aim.intercept(Vector2(global_position.x, global_position.z), ps.motion.position, v, speed)
+		if hit != null:
+			return Vector3((hit as Vector2).x, 0.0, (hit as Vector2).y)
+	return target.global_position
 
 
 func target_pos2() -> Vector2:

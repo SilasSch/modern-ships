@@ -8,7 +8,7 @@ var _torp_t: float = 8.0
 
 
 func _setup_kind() -> void:
-	configure(DESTROYER_MODEL, Tuning.DESTROYER_HP, Tuning.DESTROYER_SPEED, 2.5, 0.5, 5.0)
+	configure(DESTROYER_MODEL, Tuning.DESTROYER_HP, Tuning.DESTROYER_SPEED, 2.5, 0.5, 2.2)
 	explosion_strength = 1.4
 	collision_radius = 1.8
 	half_length = 11.0
@@ -40,7 +40,7 @@ func _ai(delta: float) -> void:
 ## Torpedo fan toward the target: count torpedoes spread over ±spread_deg.
 func launch_fan(count: int, spread_deg: float) -> void:
 	var tubes := [model.find_child("Torp_L") as Node3D, model.find_child("Torp_R") as Node3D]
-	var to := target.global_position - global_position
+	var to := lead_point(Tuning.TORPEDO_SPEED) - global_position
 	var base_yaw := atan2(to.x, to.z)
 	for i in count:
 		var k := 0.0 if count == 1 else (float(i) / (count - 1)) * 2.0 - 1.0

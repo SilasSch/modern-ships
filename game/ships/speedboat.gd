@@ -13,7 +13,7 @@ var _tracer_t: float = 0.0
 
 
 func _init() -> void:
-	configure(MODEL, Tuning.SPEEDBOAT_HP, Tuning.SPEEDBOAT_SPEED, 9.0, 1.7, 2.4)
+	configure(MODEL, Tuning.SPEEDBOAT_HP, Tuning.SPEEDBOAT_SPEED, 9.0, 1.7, 1.8)
 	is_small = true
 	collision_radius = 1.0
 	half_length = 3.0

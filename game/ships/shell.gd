@@ -93,6 +93,8 @@ func _impact() -> void:
 	_done = true
 	if target and is_instance_valid(target) and target.call(&"can_be_hit"):
 		var d := Vector2(target.global_position.x - to.x, target.global_position.z - to.z).length()
+		if target.has_method(&"hull_distance"):
+			d = float(target.call(&"hull_distance", Vector2(to.x, to.z))) + BLAST_RADIUS - 5.0
 		if d <= BLAST_RADIUS:
 			target.call(&"apply_damage", damage)
 	if is_inside_tree():

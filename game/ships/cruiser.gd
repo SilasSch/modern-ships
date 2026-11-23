@@ -6,7 +6,7 @@ const CRUISER_MODEL := preload("res://assets/models/cruiser.glb")
 
 
 func _setup_kind() -> void:
-	configure(CRUISER_MODEL, Tuning.CRUISER_HP, Tuning.CRUISER_SPEED, 1.2, 0.22, 8.0)
+	configure(CRUISER_MODEL, Tuning.CRUISER_HP, Tuning.CRUISER_SPEED, 1.2, 0.22, 3.6)
 	explosion_strength = 1.9
 	collision_radius = 2.8
 	half_length = 17.0
