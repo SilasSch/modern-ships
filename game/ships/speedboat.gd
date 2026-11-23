@@ -23,7 +23,7 @@ func _init() -> void:
 func _ready() -> void:
 	super._ready()
 	_orbit_dir = 1.0 if _rng.randf() < 0.5 else -1.0
-	_orbit_r = _rng.randf_range(25.0, 40.0)
+	_orbit_r = _rng.randf_range(60.0, 90.0)
 	_gun_t = _rng.randf_range(0.0, Tuning.SPEEDBOAT_GUN_INTERVAL)
 	_tracer = MeshInstance3D.new()
 	_tracer.mesh = _tracer_mesh

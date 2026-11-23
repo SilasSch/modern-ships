@@ -38,33 +38,52 @@ const TRAVERSE_RATE: float = 0.45
 const TURRET_ARC: float = deg_to_rad(150.0)
 
 # --- Flak ---
-const FLAK_RANGE: float = 60.0
+const FLAK_RANGE: float = 110.0
 const FLAK_RATE: float = 8.0
 const FLAK_DAMAGE: float = 3.0
 
 # --- Enemies ---
-const SPEEDBOAT_HP: float = 60.0
+const SPEEDBOAT_HP: float = 80.0
 const SPEEDBOAT_SPEED: float = 22.0
 const SPEEDBOAT_GUN_DMG: float = 4.0
 const SPEEDBOAT_GUN_INTERVAL: float = 0.5
-const SPEEDBOAT_RANGE: float = 45.0
+const SPEEDBOAT_RANGE: float = 120.0
 const FRIGATE_HP: float = 400.0
 const FRIGATE_SPEED: float = 7.0
 const FRIGATE_SALVO: int = 3
-const FRIGATE_SHELL_DMG: float = 20.0
-const FRIGATE_SALVO_INTERVAL: float = 5.0
-const FRIGATE_RANGE: float = 110.0
-const FRIGATE_STANDOFF_MIN: float = 50.0
-const FRIGATE_STANDOFF_MAX: float = 85.0
-const SHELL_FLIGHT_TIME: float = 1.8
-const SUB_HP: float = 90.0
+const FRIGATE_SHELL_DMG: float = 60.0
+const FRIGATE_SALVO_INTERVAL: float = 7.0
+const FRIGATE_RANGE: float = 600.0
+const FRIGATE_STANDOFF_MIN: float = 300.0
+const FRIGATE_STANDOFF_MAX: float = 450.0
+const SHELL_SPEED: float = 120.0
+const SHELL_MIN_FLIGHT: float = 2.0
+const DESTROYER_HP: float = 450.0
+const DESTROYER_SPEED: float = 15.0
+const DESTROYER_GUN_SALVO: int = 2
+const DESTROYER_GUN_INTERVAL: float = 6.0
+const DESTROYER_GUN_DMG: float = 45.0
+const DESTROYER_RANGE: float = 450.0
+const DESTROYER_STANDOFF_MIN: float = 220.0
+const DESTROYER_STANDOFF_MAX: float = 350.0
+const DESTROYER_TORP_INTERVAL: float = 18.0
+const DESTROYER_TORP_RANGE: float = 400.0
+const CRUISER_HP: float = 900.0
+const CRUISER_SPEED: float = 8.0
+const CRUISER_SALVO: int = 6
+const CRUISER_SALVO_INTERVAL: float = 9.0
+const CRUISER_SHELL_DMG: float = 90.0
+const CRUISER_RANGE: float = 700.0
+const CRUISER_STANDOFF_MIN: float = 400.0
+const CRUISER_STANDOFF_MAX: float = 600.0
+const SUB_HP: float = 250.0
 const SUB_SPEED: float = 9.0
 const SUB_SUBMERGED_TIME: float = 7.0
 const SUB_SURFACED_TIME: float = 5.0
-const TORPEDO_DMG: float = 45.0
-const TORPEDO_SPEED: float = 18.0
-const SUB_RANGE: float = 90.0
-const SUB_ATTACK_DIST: float = 55.0
+const TORPEDO_DMG: float = 180.0
+const TORPEDO_SPEED: float = 25.0
+const SUB_RANGE: float = 450.0
+const SUB_ATTACK_DIST: float = 250.0
 
 # --- Flow ---
 const WAVE_DELAY: float = 3.0

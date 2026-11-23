@@ -3,9 +3,9 @@ extends RefCounted
 ## Spawns waves of enemies; the next wave starts WAVE_DELAY after the previous one is cleared.
 
 const DEFAULT_WAVES: Array = [
-	[{"type": &"speedboat", "count": 4}, {"type": &"frigate", "count": 1}],
-	[{"type": &"frigate", "count": 2}, {"type": &"speedboat", "count": 4}, {"type": &"submarine", "count": 1}],
-	[{"type": &"frigate", "count": 2}, {"type": &"submarine", "count": 2}, {"type": &"speedboat", "count": 6}],
+	[{"type": &"frigate", "count": 2}],
+	[{"type": &"frigate", "count": 2}, {"type": &"destroyer", "count": 1}, {"type": &"submarine", "count": 1}],
+	[{"type": &"cruiser", "count": 1}, {"type": &"destroyer", "count": 2}, {"type": &"submarine", "count": 1}, {"type": &"speedboat", "count": 2}],
 ]
 
 var current_wave: int = 0

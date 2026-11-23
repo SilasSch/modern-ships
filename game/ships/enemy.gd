@@ -59,6 +59,10 @@ static func create(kind: StringName) -> Enemy:
 			return Frigate.new()
 		&"submarine":
 			return Submarine.new()
+		&"destroyer":
+			return Destroyer.new()
+		&"cruiser":
+			return Cruiser.new()
 	push_error("unknown enemy type %s" % kind)
 	return null
 
