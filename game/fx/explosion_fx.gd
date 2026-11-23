@@ -8,6 +8,8 @@ const FIRE := Color("#ff8a3d")
 var pool := FxPool.new(SLOTS)
 var _spark_pool := FxPool.new(6)
 var _sparks: Array[GPUParticles3D] = []
+var _exit_pool := FxPool.new(4)
+var _exits: Array[GPUParticles3D] = []
 var _slots: Array[Dictionary] = []
 var _ocean: Ocean
 
@@ -17,6 +19,13 @@ func _ready() -> void:
 	_ocean = get_tree().get_first_node_in_group(&"ocean") as Ocean
 	for i in SLOTS:
 		_slots.append(_build_slot())
+	for i in 4:
+		var epm := _pm(Vector3(0, 0.15, -1), 22.0, 25.0, 70.0, 9.0, 1.5)
+		epm.color_ramp = FxUtil.ramp([Color(6, 5, 4, 1), FIRE * 2.5, Color(0.5, 0.2, 0.1, 0.0)], PackedFloat32Array([0.0, 0.25, 1.0]))
+		var ep := FxUtil.burst(160, 0.9, epm, FxUtil.quad(0.5, true))
+		ep.top_level = true
+		add_child(ep)
+		_exits.append(ep)
 	for i in 6:
 		var pm := _pm(Vector3.UP, 70.0, 4.0, 12.0, 14.0, 1.0)
 		pm.color_ramp = FxUtil.ramp([FIRE * 3.5, Color(1, 0.6, 0.2, 0.0)], PackedFloat32Array([0.0, 1.0]))
@@ -24,6 +33,16 @@ func _ready() -> void:
 		p.top_level = true
 		add_child(p)
 		_sparks.append(p)
+
+
+## Railgun through-shot: sparks, splinters and spray bursting out along the round's path.
+func exit_spray(at: Vector3, dir: Vector3, strength: float) -> void:
+	var i := _exit_pool.acquire()
+	var p := _exits[i]
+	p.global_transform = Transform3D(Basis.looking_at(dir, Vector3.UP), at)
+	p.scale = Vector3.ONE * clampf(strength, 0.8, 2.0)
+	FxUtil.fire(p)
+	play(at, 1.1 * strength)
 
 
 ## Light hit feedback (flak, gunfire): a few sparks, outside the explosion pool, no screen shake.

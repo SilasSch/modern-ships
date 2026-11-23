@@ -10,7 +10,6 @@ const ISLANDS := [
 	["b", Vector2(-64, 84), 12.0],
 	["c", Vector2(132, 24), 8.0],
 ]
-const BEAM_SPEED := 600.0
 const END_DELAY := 2.2
 
 var waves: Array = WaveDirector.DEFAULT_WAVES
@@ -24,7 +23,7 @@ var blockers: Array = []
 var kills: int = 0
 var elapsed: float = 0.0
 
-var _pending_hits: Array = []  # [{t, enemy, damage, dir}]
+var _rounds: Array[RailgunRound] = []
 var _end_t: float = -1.0
 var _outcome: StringName = &"running"
 var _pause_menu: OverlayMenu
@@ -103,7 +102,7 @@ func _process(delta: float) -> void:
 	elapsed += delta if _outcome == &"running" else 0.0
 	for kind: StringName in director.tick(delta):
 		_spawn(kind)
-	_resolve_hits(delta)
+	_step_rounds(delta)
 	if _outcome == &"running":
 		if player.health.is_dead():
 			_finish(&"defeat")
@@ -146,28 +145,30 @@ func _on_enemy_died(_e: Enemy) -> void:
 
 
 func _on_fired(shot: RailgunShot, origin: Vector3, dir: Vector3) -> void:
-	var targets: Array = []
+	var round := RailgunRound.new()
+	round.setup(origin, dir, shot, _hittable_enemies, blockers)
+	add_child(round)
+	_rounds.append(round)
+	var reach := BeamHit.cast(Vector2(origin.x, origin.z), Vector2(dir.x, dir.z), Tuning.PROJECTILE_RANGE, 0.0, [], blockers)
+	var end := origin + dir * float(reach["end_distance"])
+	player.fx.play_muzzle(origin, dir, shot.overcharge, Vector3(end.x, 0.0, end.z))
+
+
+func _hittable_enemies() -> Array:
+	var out: Array = []
 	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
 		if n is Enemy and (n as Enemy).can_be_hit():
-			targets.append(n)
-	var res := BeamHit.cast(Vector2(origin.x, origin.z), Vector2(dir.x, dir.z), Tuning.BEAM_RANGE, shot.half_width, targets, blockers)
-	for h: Dictionary in res["hits"]:
-		_pending_hits.append({"t": float(h["distance"]) / BEAM_SPEED, "enemy": h["target"], "damage": shot.damage, "dir": dir})
-	player.fx.play_shot(origin, dir, float(res["end_distance"]), shot.overcharge)
-	var end_point := origin + dir * float(res["end_distance"])
-	if float(res["end_distance"]) < Tuning.BEAM_RANGE - 0.1:
-		explosions.play(Vector3(end_point.x, 1.0, end_point.z), 0.6)
+			out.append(n)
+	return out
 
 
-func _resolve_hits(delta: float) -> void:
-	for i in range(_pending_hits.size() - 1, -1, -1):
-		var h: Dictionary = _pending_hits[i]
-		h["t"] = float(h["t"]) - delta
-		if float(h["t"]) <= 0.0:
-			_pending_hits.remove_at(i)
-			var e: Enemy = h["enemy"]
-			if is_instance_valid(e) and e.can_be_hit():
-				e.apply_damage(float(h["damage"]), h["dir"])
+func _step_rounds(delta: float) -> void:
+	for i in range(_rounds.size() - 1, -1, -1):
+		var r := _rounds[i]
+		if not is_instance_valid(r) or not r.step(delta):
+			if is_instance_valid(r):
+				r.queue_free()
+			_rounds.remove_at(i)
 
 
 func _on_player_died() -> void:

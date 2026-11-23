@@ -1,52 +1,56 @@
 extends RefCounted
-## Charge, overcharge and fire the railgun; capture every stage of the shot.
+## Railgun round: loaded, hold 50 % / 100 %, muzzle blast, round in flight, impact, aftermath.
+
+var _rounds: Array[RailgunRound] = []
 
 
-func _setup(c: Node) -> PlayerShip:
+func run(c: Node) -> void:
 	var root: Node3D = c.get_tree().current_scene
 	(c.find("Camera") as Camera3D).queue_free()
+	var boom := ExplosionFx.new()
+	root.add_child(boom)
 	var ship: PlayerShip = (load("res://ships/player_ship.tscn") as PackedScene).instantiate()
 	ship.use_device_input = false
 	root.add_child(ship)
 	var cam := FollowCamera.new()
 	cam.target = ship
 	cam.mouse_aim = false
+	cam.zoom_index = 1
 	root.add_child(cam)
 	cam.make_current()
+	(c.find("Ocean") as Ocean).follow = cam
 	(c.find("Weather") as Weather).follow = cam
-	var boom := ExplosionFx.new()
-	boom.name = "Explosions"
-	root.add_child(boom)
-	ship.aim_point = Vector3(80, 0, -50)
+	var targets: Array = []
+	for d: float in [150.0, 190.0]:
+		var f := Frigate.new()
+		f.position = Vector3(d * 0.6, 0, -d * 0.8)
+		f.rotation.y = 0.4
+		root.add_child(f)
+		targets.append(f)
+	ship.aim_point = Vector3(120, 0, -160)
 	ship.fired.connect(func(shot: RailgunShot, origin: Vector3, dir: Vector3) -> void:
-		ship.fx.play_shot(origin, dir, Tuning.BEAM_RANGE, shot.overcharge)
-		var hit := origin + dir * 55.0
-		c.get_tree().create_timer(0.1, true, false, false).timeout.connect(func() -> void: boom.play(hit, 1.0 + shot.overcharge)))
-	return ship
-
-
-func _fire_sequence(c: Node, ship: PlayerShip, hold: float, tag: String) -> void:
+		var r := RailgunRound.new()
+		r.setup(origin, dir, shot, func() -> Array: return targets.filter(func(t: Enemy) -> bool: return is_instance_valid(t) and t.can_be_hit()), [])
+		root.add_child(r)
+		_rounds.append(r)
+		ship.fx.play_muzzle(origin, dir, shot.overcharge, origin + dir * Tuning.PROJECTILE_RANGE))
+	c.get_tree().process_frame.connect(func() -> void:
+		for r: RailgunRound in _rounds:
+			if is_instance_valid(r):
+				r.step(1.0 / 30.0))
+	ship.railgun.tick(Tuning.RELOAD_TIME - 1.5)
+	await c.wait(1.8)
+	await c.shot("r_loaded")
 	ship._handle_fire_input(true)
-	await c.wait(0.6)
-	await c.shot(tag + "_charge50")
-	await c.wait(0.6)
-	await c.shot(tag + "_charge100")
-	if hold > 1.2:
-		await c.wait(hold - 1.2)
-		await c.shot(tag + "_overcharge")
+	await c.wait(1.25)
+	await c.shot("r_hold50")
+	await c.wait(1.0)
+	await c.shot("r_hold100")
 	ship._handle_fire_input(false)
-	await c.shot(tag + "_hitstop")
+	await c.shot("r_muzzle")
 	await c.wait(0.15)
-	await c.shot(tag + "_t015")
-	await c.wait(0.35)
-	await c.shot(tag + "_t050")
-	await c.wait(0.7)
-	await c.shot(tag + "_t120")
-
-
-func run(c: Node) -> void:
-	var ship := _setup(c)
-	await c.wait(2.0)
-	await _fire_sequence(c, ship, 1.2 + 0.78, "a")
-	await c.wait(3.5)
-	await _fire_sequence(c, ship, 1.2 + 1.3, "b")
+	await c.shot("r_flight")
+	await c.wait(0.25)
+	await c.shot("r_impact")
+	await c.wait(1.0)
+	await c.shot("r_after")

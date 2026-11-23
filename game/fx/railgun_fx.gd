@@ -1,15 +1,16 @@
 class_name RailgunFx
 extends Node3D
-## Visuals of the railgun: charge build-up on the ship and the shot itself (beam, muzzle, water).
-## Child of PlayerShip. Effect nodes are top_level so they stay in world space.
+## Railgun visuals on the ship: reload glow, hold/overcharge build-up and the muzzle blast.
+## The round itself is a RailgunRound. Child of PlayerShip; blast nodes are top_level.
 
-const BEAM_SHADER := preload("res://fx/beam.gdshader")
 const RING_SHADER := preload("res://fx/ring.gdshader")
-const BEAM_COLOR := Color("#4de8ff")
-const FIRE_COLOR := Color("#7ff0ff")
-const BEAM_LIGHTS := 6
-const BEAM_RANGE_FOR_DENSITY := 260.0
-const SPIRAL_POINTS := 700
+const CYAN := Color("#4de8ff")
+const PLASMA := Color("#ffb46b")
+# Rail geometry of battlecruiser.glb (Railgun local space)
+const RAIL_X := 0.42
+const RAIL_Y := 1.25
+const RAIL_Z0 := -1.8
+const RAIL_Z1 := -14.0
 
 var ship: PlayerShip
 var ocean: Ocean
@@ -17,35 +18,23 @@ var ocean: Ocean
 var _energy_mat: StandardMaterial3D
 var _rail_mat: StandardMaterial3D
 var _arc_mesh := ImmediateMesh.new()
-var _arc_inst: MeshInstance3D
 var _arc_mat: StandardMaterial3D
 var _arc_timer: float = 0.0
 var _suction: GPUParticles3D
 var _charge_light: OmniLight3D
 var _rng := RandomNumberGenerator.new()
 
-# shot state
-var _beam_root: Node3D
-var _core: MeshInstance3D
-var _sheath: MeshInstance3D
-var _outer: MeshInstance3D
-var _beam_lights: Array[OmniLight3D] = []
 var _flash_light: OmniLight3D
 var _rings: Array[MeshInstance3D] = []
-var _spiral: GPUParticles3D
-var _sparks: GPUParticles3D
-var _spray: GPUParticles3D
-var _steam: GPUParticles3D
 var _fireball: GPUParticles3D
+var _core_flash: GPUParticles3D
 var _muzzle_sparks: GPUParticles3D
+var _arc_burst: GPUParticles3D
 var _smoke: GPUParticles3D
 var _t: float = 99.0
 var _over: float = 0.0
-var _len: float = 0.0
-var _from: Vector3
-var _to: Vector3
 var _afterglow: float = 0.0
-var _prev_state: int = RailgunState.State.READY
+var _prev_state: int = RailgunState.State.LOADING
 
 
 func _ready() -> void:
@@ -53,11 +42,11 @@ func _ready() -> void:
 	ship = get_parent() as PlayerShip
 	ocean = get_tree().get_first_node_in_group(&"ocean") as Ocean
 	_setup_materials()
-	_setup_charge()
-	_setup_shot()
+	_setup_hold()
+	_setup_muzzle()
 	ship.charge_started.connect(func() -> void: _sfx(&"charge", ship.muzzle.global_position, 0.0))
 	ship.fired.connect(func(shot: RailgunShot, origin: Vector3, _dir: Vector3) -> void:
-		_sfx(&"fire", origin, 2.0, 1.0 - 0.12 * shot.overcharge))
+		_sfx(&"fire", origin, 3.0, 1.0 - 0.12 * shot.overcharge))
 	ship.misfired.connect(func() -> void: _sfx(&"misfire", ship.global_position, 0.0))
 
 
@@ -65,8 +54,6 @@ func _sfx(sound: StringName, at: Vector3, db: float, pitch: float = 1.0) -> void
 	if has_node(^"/root/Sfx"):
 		Sfx.play(sound, at, db, pitch)
 
-
-# ------------------------------------------------------------------ setup
 
 func _setup_materials() -> void:
 	var rg := ship.railgun_mesh as MeshInstance3D
@@ -77,347 +64,240 @@ func _setup_materials() -> void:
 		if m.resource_name == "Energy":
 			_energy_mat = m.duplicate() as StandardMaterial3D
 			_energy_mat.emission_enabled = true
-			_energy_mat.emission = BEAM_COLOR
+			_energy_mat.emission = CYAN
 			rg.set_surface_override_material(i, _energy_mat)
 		elif m.resource_name == "Rail":
 			_rail_mat = m.duplicate() as StandardMaterial3D
 			_rail_mat.emission_enabled = true
-			_rail_mat.emission = BEAM_COLOR
+			_rail_mat.emission = CYAN
 			_rail_mat.emission_energy_multiplier = 0.0
 			rg.set_surface_override_material(i, _rail_mat)
 
 
-func _setup_charge() -> void:
+func _setup_hold() -> void:
 	_arc_mat = StandardMaterial3D.new()
 	_arc_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_arc_mat.albedo_color = BEAM_COLOR * 5.0
-	_arc_inst = MeshInstance3D.new()
-	_arc_inst.mesh = _arc_mesh
-	_arc_inst.material_override = _arc_mat
-	_arc_inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	ship.railgun_mesh.add_child(_arc_inst)
+	_arc_mat.albedo_color = CYAN * 5.0
+	var arc := MeshInstance3D.new()
+	arc.mesh = _arc_mesh
+	arc.material_override = _arc_mat
+	arc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ship.railgun_mesh.add_child(arc)
 
 	var pm := ParticleProcessMaterial.new()
 	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE_SURFACE
-	pm.emission_sphere_radius = 4.0
-	pm.radial_accel_min = -70.0
-	pm.radial_accel_max = -50.0
+	pm.emission_sphere_radius = 6.0
+	pm.radial_accel_min = -110.0
+	pm.radial_accel_max = -80.0
 	pm.gravity = Vector3.ZERO
 	pm.scale_min = 0.6
 	pm.scale_max = 1.2
-	pm.color = BEAM_COLOR * 3.0
+	pm.color = CYAN * 3.0
 	_suction = GPUParticles3D.new()
-	_suction.amount = roundi(160 * Settings.particle_scale())
-	_suction.lifetime = 0.38
+	_suction.amount = roundi(180 * Settings.particle_scale())
+	_suction.lifetime = 0.36
 	_suction.local_coords = true
 	_suction.emitting = false
 	_suction.process_material = pm
-	_suction.draw_pass_1 = FxUtil.quad(0.22, true)
-	_suction.visibility_aabb = AABB(Vector3(-6, -6, -6), Vector3(12, 12, 12))
+	_suction.draw_pass_1 = FxUtil.quad(0.3, true)
+	_suction.visibility_aabb = AABB(Vector3(-8, -8, -8), Vector3(16, 16, 16))
 	ship.muzzle.add_child(_suction)
 
 	_charge_light = OmniLight3D.new()
-	_charge_light.light_color = BEAM_COLOR
-	_charge_light.omni_range = 16.0
+	_charge_light.light_color = CYAN
+	_charge_light.omni_range = 22.0
 	_charge_light.light_energy = 0.0
 	_charge_light.light_volumetric_fog_energy = 3.0
 	ship.muzzle.add_child(_charge_light)
 
 
-func _cylinder(power: float) -> MeshInstance3D:
-	var cm := CylinderMesh.new()
-	cm.top_radius = 1.0
-	cm.bottom_radius = 1.0
-	cm.height = 1.0
-	cm.radial_segments = 20
-	cm.rings = 1
-	cm.cap_top = false
-	cm.cap_bottom = false
-	var mi := MeshInstance3D.new()
-	mi.mesh = cm
-	var mat := ShaderMaterial.new()
-	mat.shader = BEAM_SHADER
-	mat.set_shader_parameter("power", power)
-	mi.material_override = mat
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mi.rotation.x = -PI / 2.0  # cylinder axis (Y) -> beam axis (-Z); UV.y 0 at the muzzle
-	return mi
-
-
-func _setup_shot() -> void:
-	_beam_root = Node3D.new()
-	_beam_root.top_level = true
-	_beam_root.visible = false
-	add_child(_beam_root)
-	_outer = _cylinder(2.4)
-	_sheath = _cylinder(1.5)
-	_core = _cylinder(0.5)
-	for c: MeshInstance3D in [_outer, _sheath, _core]:
-		_beam_root.add_child(c)
-	for i in BEAM_LIGHTS:
-		var l := OmniLight3D.new()
-		l.light_color = BEAM_COLOR
-		l.omni_range = 18.0
-		l.light_energy = 0.0
-		l.light_volumetric_fog_energy = 5.0
-		l.shadow_enabled = false
-		_beam_root.add_child(l)
-		_beam_lights.append(l)
+func _setup_muzzle() -> void:
 	_flash_light = OmniLight3D.new()
 	_flash_light.top_level = true
-	_flash_light.light_color = Color(0.85, 0.97, 1.0)
-	_flash_light.omni_range = 40.0
+	_flash_light.light_color = Color(1.0, 0.72, 0.45)
+	_flash_light.omni_range = 70.0
 	_flash_light.light_energy = 0.0
-	_flash_light.light_volumetric_fog_energy = 3.0
+	_flash_light.light_volumetric_fog_energy = 4.0
 	add_child(_flash_light)
-	for i in 2:
+	for i in 3:
 		var q := MeshInstance3D.new()
 		var qm := QuadMesh.new()
 		qm.size = Vector2(2, 2)
 		q.mesh = qm
 		var rm := ShaderMaterial.new()
 		rm.shader = RING_SHADER
-		rm.set_shader_parameter("color", BEAM_COLOR.lerp(Color.WHITE, 0.5))
+		rm.set_shader_parameter("color", Color(1.0, 0.92, 0.8))
 		q.material_override = rm
 		q.top_level = true
 		q.visible = false
 		add_child(q)
 		_rings.append(q)
 
-	_spiral = _line_burst(700, 1.4, BEAM_COLOR * 3.0, 0.35, 1.2, 0.0)
-	_sparks = _line_burst(500, 0.6, BEAM_COLOR * 5.0, 0.18, 5.0, 3.0)
-	_spray = _line_burst(450, 1.3, Color(0.75, 0.85, 0.92, 0.85), 0.9, 7.0, 16.0, false)
-	_steam = _line_burst(90, 3.0, Color(0.6, 0.72, 0.8, 0.22), 4.5, 1.0, -0.6, false)
+	# White-hot core flash -> orange plasma fireball -> smoke (after the Navy test footage).
+	var cpm := ParticleProcessMaterial.new()
+	cpm.direction = Vector3(0, 0, -1)
+	cpm.spread = 4.0
+	cpm.initial_velocity_min = 10.0
+	cpm.initial_velocity_max = 30.0
+	cpm.damping_min = 30.0
+	cpm.damping_max = 40.0
+	cpm.gravity = Vector3.ZERO
+	cpm.scale_curve = FxUtil.curve([Vector2(0, 0.6), Vector2(0.3, 1.0), Vector2(1, 1.2)])
+	cpm.color_ramp = FxUtil.ramp([Color(5, 4.6, 4, 1), Color(4, 2.4, 1.1, 0.8), Color(1.5, 0.6, 0.2, 0)], PackedFloat32Array([0.0, 0.25, 1.0]))
+	_core_flash = FxUtil.burst(5, 0.22, cpm, FxUtil.quad(6.5, true))
+	add_child(_core_flash)
 
 	var fpm := ParticleProcessMaterial.new()
-	fpm.direction = Vector3(0, 0, -1)
-	fpm.spread = 18.0
-	fpm.initial_velocity_min = 6.0
-	fpm.initial_velocity_max = 26.0
-	fpm.damping_min = 18.0
-	fpm.damping_max = 26.0
-	fpm.gravity = Vector3(0, 1.0, 0)
+	fpm.direction = Vector3(0, 0.05, -1)
+	fpm.spread = 22.0
+	fpm.initial_velocity_min = 10.0
+	fpm.initial_velocity_max = 45.0
+	fpm.damping_min = 22.0
+	fpm.damping_max = 32.0
+	fpm.gravity = Vector3(0, 1.5, 0)
 	fpm.scale_min = 0.8
-	fpm.scale_max = 1.6
-	fpm.scale_curve = FxUtil.curve([Vector2(0, 0.4), Vector2(0.3, 1.0), Vector2(1, 1.3)])
-	fpm.color_ramp = FxUtil.ramp([Color(6, 6, 6, 1), BEAM_COLOR * 3.0, Color(0.2, 0.5, 0.7, 0.0)], PackedFloat32Array([0.0, 0.3, 1.0]))
-	_fireball = FxUtil.burst(18, 0.7, fpm, FxUtil.quad(3.2, true))
-	_fireball.local_coords = false
+	fpm.scale_max = 1.7
+	fpm.scale_curve = FxUtil.curve([Vector2(0, 0.35), Vector2(0.25, 1.0), Vector2(1, 1.5)])
+	fpm.color_ramp = FxUtil.ramp([Color(4, 3.2, 2.2, 1), PLASMA * 2.6, Color(0.9, 0.32, 0.08, 0.7), Color(0.08, 0.08, 0.09, 0.0)],
+		PackedFloat32Array([0.0, 0.12, 0.5, 1.0]))
+	_fireball = FxUtil.burst(26, 1.1, fpm, FxUtil.quad(5.5, true))
 	add_child(_fireball)
 
 	var mpm := ParticleProcessMaterial.new()
-	mpm.direction = Vector3(0, 0, -1)
-	mpm.spread = 35.0
-	mpm.initial_velocity_min = 15.0
-	mpm.initial_velocity_max = 55.0
-	mpm.damping_min = 3.0
-	mpm.damping_max = 6.0
+	mpm.direction = Vector3(0, 0.1, -1)
+	mpm.spread = 40.0
+	mpm.initial_velocity_min = 20.0
+	mpm.initial_velocity_max = 80.0
+	mpm.damping_min = 2.0
+	mpm.damping_max = 5.0
 	mpm.gravity = Vector3(0, -9.0, 0)
-	mpm.color_ramp = FxUtil.ramp([BEAM_COLOR * 4.0, Color(1.0, 1.0, 1.0, 0.0)], PackedFloat32Array([0.0, 1.0]))
-	_muzzle_sparks = FxUtil.burst(140, 0.7, mpm, FxUtil.quad(0.25, true))
+	mpm.color_ramp = FxUtil.ramp([Color(5, 4, 2.5, 1), PLASMA * 2.0, Color(1, 0.5, 0.2, 0.0)], PackedFloat32Array([0.0, 0.4, 1.0]))
+	_muzzle_sparks = FxUtil.burst(260, 1.0, mpm, FxUtil.quad(0.3, true))
 	add_child(_muzzle_sparks)
 
+	var apm := ParticleProcessMaterial.new()
+	apm.direction = Vector3(0, 0, -1)
+	apm.spread = 70.0
+	apm.initial_velocity_min = 8.0
+	apm.initial_velocity_max = 30.0
+	apm.damping_min = 6.0
+	apm.damping_max = 9.0
+	apm.gravity = Vector3.ZERO
+	apm.color_ramp = FxUtil.ramp([CYAN * 5.0, Color(0.3, 0.9, 1.0, 0.0)], PackedFloat32Array([0.0, 1.0]))
+	_arc_burst = FxUtil.burst(90, 0.4, apm, FxUtil.quad(0.4, true))
+	add_child(_arc_burst)
+
 	var spm := ParticleProcessMaterial.new()
-	spm.direction = Vector3(0, 0.3, -1)
-	spm.spread = 40.0
-	spm.initial_velocity_min = 2.0
-	spm.initial_velocity_max = 9.0
+	spm.direction = Vector3(0, 0.4, -1)
+	spm.spread = 35.0
+	spm.initial_velocity_min = 3.0
+	spm.initial_velocity_max = 14.0
 	spm.damping_min = 2.0
 	spm.damping_max = 3.0
-	spm.gravity = Vector3(0, 1.2, 0)
-	spm.scale_curve = FxUtil.curve([Vector2(0, 0.5), Vector2(1, 2.2)])
-	spm.color_ramp = FxUtil.ramp([Color(0.25, 0.3, 0.36, 0.0), Color(0.22, 0.27, 0.33, 0.5), Color(0.2, 0.24, 0.3, 0.0)], PackedFloat32Array([0.0, 0.1, 1.0]))
-	_smoke = FxUtil.burst(14, 3.0, spm, FxUtil.quad(4.0, false))
+	spm.gravity = Vector3(0, 1.4, 0)
+	spm.scale_curve = FxUtil.curve([Vector2(0, 0.5), Vector2(1, 2.6)])
+	spm.color_ramp = FxUtil.ramp([Color(0.25, 0.26, 0.28, 0.0), Color(0.22, 0.23, 0.26, 0.55), Color(0.18, 0.19, 0.22, 0.0)], PackedFloat32Array([0.0, 0.12, 1.0]))
+	_smoke = FxUtil.burst(20, 4.0, spm, FxUtil.quad(7.0, false))
 	add_child(_smoke)
-
-
-## A burst emitted along a box that is aligned with the beam (box local Z = beam axis).
-func _line_burst(amount: int, lifetime: float, color: Color, size: float, speed: float, grav: float, additive: bool = true) -> GPUParticles3D:
-	var pm := ParticleProcessMaterial.new()
-	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pm.emission_box_extents = Vector3(0.1, 0.1, 40)
-	pm.direction = Vector3(0, 1, 0)
-	pm.spread = 180.0 if additive else 35.0
-	pm.initial_velocity_min = speed * 0.4
-	pm.initial_velocity_max = speed
-	pm.damping_min = 1.0
-	pm.damping_max = 2.0
-	pm.gravity = Vector3(0, -grav, 0)
-	pm.scale_min = 0.6
-	pm.scale_max = 1.3
-	pm.color_ramp = FxUtil.ramp([color, Color(color.r, color.g, color.b, 0.0)], PackedFloat32Array([0.15, 1.0]))
-	var p := FxUtil.burst(amount, lifetime, pm, FxUtil.quad(size, additive))
-	p.explosiveness = 0.92
-	add_child(p)
-	return p
 
 
 # ------------------------------------------------------------------ per frame
 
 func _process(delta: float) -> void:
 	var gun := ship.railgun
-	var c := 1.0 if gun.state == RailgunState.State.HOLDING else gun.reload * 0.35
+	var holding := gun.state == RailgunState.State.HOLDING
 	var o := gun.overcharge
-	var c2 := c * c
-	var charging := gun.state == RailgunState.State.HOLDING
 	if gun.state == RailgunState.State.READY and _prev_state == RailgunState.State.LOADING:
-		_sfx(&"recharge", ship.global_position, -8.0)
+		_sfx(&"reload_done", ship.global_position, -4.0)
 	_prev_state = gun.state
 	if has_node(^"/root/Sfx"):
-		Sfx.loop(&"overcharge_loop", charging and o > 0.0, linear_to_db(clampf(0.3 + o, 0.0, 1.0)) - 4.0)
+		Sfx.loop(&"overcharge_loop", holding and o > 0.0, linear_to_db(clampf(0.3 + o, 0.0, 1.0)) - 4.0)
 
 	var pulse := 0.75 + 0.25 * sin(Time.get_ticks_msec() * 0.03)
 	_afterglow = maxf(0.0, _afterglow - delta)
+	var loaded := gun.state == RailgunState.State.READY or holding
 	if _energy_mat:
-		_energy_mat.emission = BEAM_COLOR.lerp(Color.WHITE, o * 0.6)
-		_energy_mat.emission_energy_multiplier = 0.4 + c2 * 9.0 * pulse + o * 8.0 * pulse + _afterglow * 6.0
+		var level := 1.0 if loaded else gun.reload
+		_energy_mat.emission = CYAN.lerp(Color.WHITE, o * 0.6)
+		_energy_mat.emission_energy_multiplier = 0.3 + level * level * 3.0 + (2.5 * pulse if holding else 0.0) + o * 8.0 * pulse + _afterglow * 6.0
 	if _rail_mat:
-		_rail_mat.emission_energy_multiplier = c2 * 1.6 + o * 2.0 + _afterglow * 2.0
-	_suction.emitting = charging and c > 0.05
-	_suction.amount_ratio = clampf(0.2 + c, 0.0, 1.0)
-	_charge_light.light_energy = c2 * 6.0 + o * 6.0 * pulse
+		_rail_mat.emission_energy_multiplier = (0.6 if holding else 0.0) + o * 2.4 + _afterglow * 2.0
+	_suction.emitting = holding
+	_suction.amount_ratio = clampf(0.35 + o, 0.0, 1.0)
+	_charge_light.light_energy = (3.0 if holding else 0.0) + o * 8.0 * pulse
 	if ocean:
-		ocean.set_charge(ship.global_position, c if charging else 0.0)
+		ocean.set_charge(ship.global_position, (0.4 + 0.6 * o) if holding else 0.0)
 	if has_node(^"/root/Feel"):
-		Feel.set_charge(c if charging else 0.0)
-	_update_arcs(delta, charging, c, o)
-	_update_shot(delta)
+		Feel.set_charge((0.3 + 0.7 * o) if holding else 0.0)
+	_update_arcs(delta, holding, o)
+	_update_blast(delta)
 
 
-func _update_arcs(delta: float, charging: bool, c: float, o: float) -> void:
+func _update_arcs(delta: float, holding: bool, o: float) -> void:
 	_arc_timer -= delta
-	if not charging or c < 0.25:
+	if not holding:
 		_arc_mesh.clear_surfaces()
 		return
 	if _arc_timer > 0.0:
 		return
 	_arc_timer = 0.045
-	_arc_mat.albedo_color = BEAM_COLOR.lerp(Color.WHITE, o) * (4.0 + o * 4.0)
+	_arc_mat.albedo_color = CYAN.lerp(Color.WHITE, o) * (4.0 + o * 4.0)
 	_arc_mesh.clear_surfaces()
 	_arc_mesh.surface_begin(Mesh.PRIMITIVE_LINES)
-	var arcs := 2 + int(c * 3.0 + o * 4.0)
-	for a in arcs:
-		var z0 := -_rng.randf_range(1.3, 8.4)
-		var prev := Vector3(-0.27, 0.8, z0)
+	for a in 2 + int(o * 5.0):
+		var z0 := _rng.randf_range(RAIL_Z1 + 0.5, RAIL_Z0 - 0.5)
+		var prev := Vector3(-RAIL_X, RAIL_Y, z0)
 		for k in range(1, 9):
 			var t := k / 8.0
-			var p := Vector3(lerpf(-0.27, 0.27, t), 0.8 + _rng.randf_range(-0.25, 0.25), z0 + _rng.randf_range(-0.3, 0.3))
+			var p := Vector3(lerpf(-RAIL_X, RAIL_X, t), RAIL_Y + _rng.randf_range(-0.4, 0.4), z0 + _rng.randf_range(-0.45, 0.45))
 			if k == 8:
-				p = Vector3(0.27, 0.8, z0 + _rng.randf_range(-0.2, 0.2))
+				p = Vector3(RAIL_X, RAIL_Y, z0 + _rng.randf_range(-0.3, 0.3))
 			_arc_mesh.surface_add_vertex(prev)
 			_arc_mesh.surface_add_vertex(p)
 			prev = p
 	_arc_mesh.surface_end()
 
 
-# ------------------------------------------------------------------ shot
+# ------------------------------------------------------------------ muzzle blast
 
-## Plays the shot: origin = muzzle, dir = horizontal unit vector, length = until the first island.
-func play_shot(origin: Vector3, dir: Vector3, length: float, overcharge: float) -> void:
+## Muzzle blast for a fired round. trench_end: where the sonic trench in the water ends.
+func play_muzzle(origin: Vector3, dir: Vector3, overcharge: float, trench_end: Vector3) -> void:
 	_t = 0.0
 	_over = overcharge
-	_len = length
-	_from = origin
-	_to = origin + dir * length
 	_afterglow = 1.0
 	var k := 1.0 + overcharge
 	var basis := Basis.looking_at(dir, Vector3.UP)
-	_beam_root.global_transform = Transform3D(basis, origin)
-	_beam_root.visible = true
-	for i in BEAM_LIGHTS:
-		_beam_lights[i].position = Vector3(0, 0, -length * (i + 0.5) / BEAM_LIGHTS)
-	_set_beam(0.0)
-
 	_flash_light.global_position = origin
-	_flash_light.light_energy = 40.0 * k
-	var ring_basis := Basis.looking_at(dir, Vector3.UP)
+	_flash_light.light_energy = 45.0 * k
 	for i in _rings.size():
-		_rings[i].global_transform = Transform3D(ring_basis, origin + dir * (1.5 + i * 2.5))
+		_rings[i].global_transform = Transform3D(basis, origin + dir * (2.0 + i * 3.5))
 		_rings[i].visible = true
-
-	_spiral_pattern(overcharge)
-	for p: GPUParticles3D in [_spiral, _sparks, _spray, _steam]:
-		var pm := p.process_material as ParticleProcessMaterial
-		if p != _spiral:
-			pm.emission_box_extents = Vector3(0.6 if p == _spray else 0.15, 0.1, length * 0.5)
-		var y := 0.3 if (p == _spray or p == _steam) else origin.y
-		p.global_transform = Transform3D(basis, origin + dir * (length * 0.5) + Vector3(0, y - origin.y, 0))
-		if p != _spiral:
-			p.amount_ratio = clampf(length / BEAM_RANGE_FOR_DENSITY, 0.15, 1.0)
-		FxUtil.fire(p)
-	for p: GPUParticles3D in [_fireball, _muzzle_sparks, _smoke]:
+	for p: GPUParticles3D in [_core_flash, _fireball, _muzzle_sparks, _arc_burst, _smoke]:
 		p.global_transform = Transform3D(basis, origin)
 		p.scale = Vector3.ONE * k
 		FxUtil.fire(p)
-
 	if ocean:
-		ocean.add_trench(origin, _to, 1.2 * k)
-		ocean.add_ring(origin, 1.0 + overcharge * 0.6)
+		ocean.add_trench(origin, trench_end, 1.6 * k, Tuning.PROJECTILE_SPEED)
+		ocean.add_ring(origin, 1.2 + overcharge * 0.6)
 	if has_node(^"/root/Feel"):
 		Feel.shot(overcharge)
 
 
-func _spiral_pattern(overcharge: float) -> void:
-	# Helix of emission points around the beam axis (local -Z = beam direction, system centered on the beam).
-	var img := Image.create(SPIRAL_POINTS, 1, false, Image.FORMAT_RGBF)
-	var r := 0.65 * (1.0 + overcharge * 0.6)
-	for i in SPIRAL_POINTS:
-		var s := float(i) / SPIRAL_POINTS * _len
-		var a := s * 1.15
-		img.set_pixel(i, 0, Color(cos(a) * r, sin(a) * r, _len * 0.5 - s))
-	var pm := _spiral.process_material as ParticleProcessMaterial
-	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_POINTS
-	pm.emission_point_texture = ImageTexture.create_from_image(img)
-	pm.emission_point_count = SPIRAL_POINTS
-	pm.spread = 180.0
-	pm.initial_velocity_min = 0.2
-	pm.initial_velocity_max = 0.9
-	pm.gravity = Vector3.ZERO
-	_spiral.amount_ratio = 1.0
-	_spiral.explosiveness = 1.0
-
-
-func _set_beam(t: float) -> void:
-	var k := 1.0 + _over
-	var core_left := maxf(0.0, 1.0 - t / 0.4)
-	var r_core := (0.22 * k) * core_left + 0.001
-	var r_sheath := (0.8 + t * 1.0) * k
-	var r_outer := (2.4 + t * 5.0) * k
-	for pair: Array in [[_core, r_core, core_left, 10.0], [_sheath, r_sheath, pow(maxf(0.0, 1.0 - t / 1.25), 2.5), 1.5],
-			[_outer, r_outer, pow(maxf(0.0, 1.0 - t / 0.45), 2.0) * 0.5, 0.5]]:
-		var mi: MeshInstance3D = pair[0]
-		mi.scale = Vector3(pair[1], _len, pair[1])
-		mi.position = Vector3(0, 0, -_len * 0.5)
-		var mat := mi.material_override as ShaderMaterial
-		mat.set_shader_parameter("color", Color.WHITE.lerp(BEAM_COLOR, 0.2) if mi == _core else BEAM_COLOR)
-		mat.set_shader_parameter("opacity", pair[2])
-		mat.set_shader_parameter("intensity", float(pair[3]) * k)
-
-
-func _update_shot(delta: float) -> void:
+func _update_blast(delta: float) -> void:
 	if _t > 30.0:
 		return
 	_t += delta
 	var k := 1.0 + _over
-	if _beam_root.visible:
-		_set_beam(_t)
-		var le := 10.0 * k * pow(maxf(0.0, 1.0 - _t / 0.9), 2.0)
-		for l: OmniLight3D in _beam_lights:
-			l.light_energy = le
-		if _t > 1.4:
-			_beam_root.visible = false
-	_flash_light.light_energy = 30.0 * k * exp(-_t * 16.0)
+	_flash_light.light_energy = 45.0 * k * exp(-_t * 9.0)
 	for i in _rings.size():
-		var rt := _t - i * 0.06
+		var rt := _t - i * 0.05
 		var r := _rings[i]
 		if not r.visible:
 			continue
 		if rt < 0.0:
 			r.scale = Vector3.ONE * 0.01
 			continue
-		r.scale = Vector3.ONE * (0.6 + rt * 34.0) * (1.0 + _over * 0.5)
-		(r.material_override as ShaderMaterial).set_shader_parameter("opacity", maxf(0.0, 1.0 - rt / 0.32) * 0.9)
-		if rt > 0.32:
+		r.scale = Vector3.ONE * (1.0 + rt * 55.0) * (1.0 + _over * 0.5)
+		(r.material_override as ShaderMaterial).set_shader_parameter("opacity", maxf(0.0, 1.0 - rt / 0.35) * 0.9)
+		if rt > 0.35:
 			r.visible = false
-	if ocean:
-		ocean.set_beam_glow(_from, _to, pow(maxf(0.0, 1.0 - _t / 0.9), 2.5) * k * 0.75)
